@@ -1,5 +1,6 @@
 ## 2025-08-18
 
+- Creata la versione Python dello script di fuzzy join (`src/fuzzy_join.py`).
 - Aggiornati README e PRD con dettagli su installazione e utilizzo della CLI.
 - Aggiunto script `tometo_tomato` per join fuzzy tra file CSV.
 - Implementato il processo di fuzzy join con selezione dinamica delle colonne e gestione dell'output.

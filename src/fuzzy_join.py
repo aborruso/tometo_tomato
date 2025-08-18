@@ -128,8 +128,6 @@ def main():
     input_header = read_header(args.input_file)
     input_cols = input_header
 
-    
-
     # prepare select clauses
     add_fields = []
     if args.add_field:
