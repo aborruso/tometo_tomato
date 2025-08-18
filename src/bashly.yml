@@ -19,6 +19,14 @@ flags:
   - long: --show-score
     short: -s
     help: "Mostra il punteggio di somiglianza medio nel risultato."
+  - long: --infer-pairs
+    short: -i
+    help: "Inferisci automaticamente coppie di colonne con nomi simili"
+  - long: --infer-threshold
+    short: -I
+    arg: value
+    default: "0.7"
+    help: "Soglia (0-1) per l'inferenza delle coppie di intestazione"
   - long: --add-field
     short: -a
     arg: field_name
