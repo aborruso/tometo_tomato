@@ -9,4 +9,11 @@
 - Creato lo script iniziale per il fuzzy join.
 - Creato `GEMINI.md` per il contesto del progetto.
 - Aggiunto il Product Requirements Document per il fuzzy join.
-- Inizio del progetto e setup della struttura.
+- Refactoring completo della logica dello script Bash:
+	- Confronto fuzzy sempre case-insensitive (LOWER).
+	- LEFT JOIN: tutti i record di input sono sempre presenti nell'output.
+	- Parametri di output pulito e ambiguo gestiti come richiesto.
+	- Output ambiguo generato solo se richiesto, con messaggi chiari in shell.
+	- Se non ci sono record ambigui, il file viene cancellato e la shell avvisa.
+	- Aggiornato README con la logica attuale, parametri e comportamento.
+	- Testata la CLI con vari scenari di output e ambiguità.
