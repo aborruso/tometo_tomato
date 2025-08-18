@@ -78,6 +78,15 @@ COPY (
 
 EOF
 
+# Check if the ambiguous file is empty (only header) and delete it
+if [ -f "$OUTPUT_AMBIGUOUS" ]; then
+    LINE_COUNT=$(wc -l < "$OUTPUT_AMBIGUOUS")
+    if [ "$LINE_COUNT" -eq 1 ]; then
+        rm "$OUTPUT_AMBIGUOUS"
+        echo "🗑️ Deleted empty ambiguous matches file: $OUTPUT_AMBIGUOUS"
+    fi
+fi
+
 echo "✅ Fuzzy join complete."
 echo "- Clean matches saved to: $OUTPUT_CLEAN"
 echo "- Ambiguous matches saved to: $OUTPUT_AMBIGUOUS"
