@@ -58,10 +58,12 @@ Supponiamo di avere due file:
 - `input.csv` (anagrafica non ufficiale)
 - `ref.csv` (fonte ufficiale)
 
+
+### Esempio base
 Se le colonne da confrontare hanno lo stesso nome nei due file:
 
 ```bash
-tometo_tomato input.csv ref.csv --add-field codice_comune --threshold 90 --show-score
+tometo_tomato input.csv ref.csv --add-field codice_comune --threshold 90 --show-score --output-clean output.csv
 ```
 
 Se le colonne hanno nomi diversi:
@@ -72,7 +74,8 @@ tometo_tomato input.csv ref.csv \
   --join-pair comune,comu \
   --add-field codice_comune \
   --threshold 90 \
-  --show-score
+  --show-score \
+  --output-clean output.csv
 ```
 
 ### Parametri principali
@@ -82,12 +85,21 @@ tometo_tomato input.csv ref.csv \
 - `--add-field campo`     : Campo del file di riferimento da aggiungere all'output
 - `--threshold N`         : Soglia minima di somiglianza (default: 90)
 - `--show-score`          : Mostra il punteggio di somiglianza medio
-- `--output-clean`        : File di output per i match puliti
-- `--output-ambiguous`    : File di output per i match ambigui
+- `--output-clean`        : File di output per i match puliti (obbligatorio)
+- `--output-ambiguous`    : File di output per i match ambigui (facoltativo)
+
+## Logica e comportamento
+- Il confronto fuzzy avviene sempre su valori convertiti in minuscolo (case-insensitive).
+- Il join è di tipo LEFT JOIN: tutti i record del file di input sono sempre presenti nell'output pulito.
+- Il file pulito contiene solo il miglior match per ogni riga di input (se supera la soglia).
+- Puoi aggiungere campi extra dal file di riferimento con `--add-field`.
+- Se specifichi `--output-ambiguous`, viene generato anche un file con i record ambigui (più match con lo stesso punteggio massimo).
+- Se non ci sono record ambigui, il file viene cancellato e la shell ti avvisa.
+- Se ci sono record ambigui, la shell ti avvisa e ti indica il file da controllare.
 
 ## Output
-- Un file CSV con i match puliti (di default: `data/processed/joined_istat_codes.csv`)
-- Un file CSV con i match ambigui (di default: `data/processed/ambiguous_istat_matches.csv`)
+- Un file CSV con i match puliti (nome e path sempre da specificare con `--output-clean`)
+- Un file CSV con i match ambigui (solo se specifichi `--output-ambiguous`)
 
 ## Esempio di caso d'uso
 Vedi il file [docs/PRD.md](docs/PRD.md) per una descrizione dettagliata e un esempio pratico.
