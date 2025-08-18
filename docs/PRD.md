@@ -70,45 +70,49 @@ Il processo deve produrre un log di esecuzione che riporti le statistiche chiave
 - **Libreria di Fuzzy Matching**: Estensione `rapidfuzz` per DuckDB
 - **Orchestrazione**: Script Python o Shell per automatizzare il flusso.
 
-## 5. Caso d'Uso Esemplificativo (Join Multi-colonna)
+## 5. Caso d'Uso Esemplificativo (Associazione Codici ISTAT)
 
-- **Tabella A (`anagrafica.csv`)**
+Questo caso d'uso dimostra l'associazione di codici ISTAT a un'anagrafica non ufficiale, gestendo le imprecisioni nei nomi delle località.
 
-| id_cliente | comune_residenza     | regione    |
-| :--------- | :------------------- | :--------- |
-| 1          | 'Reggio di Calabria' | 'Calabria' |
-| 2          | 'Milano'             | 'Lombardia'|
+- **Tabella A (`ref.csv` - Fonte ISTAT)**
+  Contiene dati ufficiali di comuni italiani.
 
-- **Tabella B (`fatture.csv`)**
+  | regione    | comune          | codice_comune |
+  | :--------- | :-------------- | :------------ |
+  | Calabria   | Reggio Calabria | 80065         |
+  | Lombardia  | Milano          | 015146        |
+  | Piemonte   | Torino          | 001272        |
+  | Lazio      | Roma            | 058091        |
+  | Campania   | Napoli          | 063049        |
 
-| id_fattura | localita        | regione_fattura | importo |
-| :--------- | :-------------- | :-------------- | :------ |
-| 101        | 'Reggio Calabria' | 'Calabria.'     | 500     |
-| 102        | 'Reggiò Calabria' | 'Calabria'      | 600     |
-| 103        | 'Milano'          | 'Lombardia'     | 700     |
+- **Tabella B (`input.csv` - Anagrafica non ufficiale)**
+  Contiene dati con possibili errori di battitura.
+
+  | regio     | comu          |
+  | :-------- | :------------ |
+  | Calabria  | Reggio Calabr |
+  | Lombardia | Milano        |
+  | Piemonte  | Torinoo       |
+  | Lazio     | Rma           |
+  | Campania  | Napoli        |
+
+- **Obiettivo**
+  Associare il `codice_comune` dalla Tabella A (`ref.csv`) ai record della Tabella B (`input.csv`).
 
 - **Configurazione**
   - Join su due coppie di colonne:
-    1. `comune_residenza` -> `localita`
-    2. `regione` -> `regione_fattura`
+    1. `regione` (da `ref.csv`) -> `regio` (da `input.csv`)
+    2. `comune` (da `ref.csv`) -> `comu` (da `input.csv`)
   - Soglia di punteggio medio: `90`.
-  - Funzione: `rapidfuzz_token_sort_ratio`.
+  - Funzione: `rapidfuzz_ratio` (o altra funzione configurata).
 
 - **Risultato Atteso**
 
-  Per il record `1` della Tabella A, il sistema valuta entrambe le possibili corrispondenze nella Tabella B:
+  Il processo identificherà la migliore corrispondenza per ogni riga di `input.csv` in `ref.csv` e assocerà il `codice_comune` corrispondente.
 
-  - **Match con record `101`**:
-    - `score_comune` = `rapidfuzz_token_sort_ratio('Reggio di Calabria', 'Reggio Calabria')` -> `~96`
-    - `score_regione` = `rapidfuzz_token_sort_ratio('Calabria', 'Calabria.')` -> `~92.3`
-    - `score_medio` = `(96 + 92.3) / 2` = **`94.15`**
+  Esempio di match atteso:
+  - `input.csv` (Reggio Calabr, Calabria) -> `ref.csv` (Reggio Calabria, Calabria) con `codice_comune` 80065.
+  - `input.csv` (Torinoo, Piemonte) -> `ref.csv` (Torino, Piemonte) con `codice_comune` 001272.
+  - `input.csv` (Rma, Lazio) -> `ref.csv` (Roma, Lazio) con `codice_comune` 058091.
 
-  - **Match con record `102`**:
-    - `score_comune` = `rapidfuzz_token_sort_ratio('Reggio di Calabria', 'Reggiò Calabria')` -> `~93.3`
-    - `score_regione` = `rapidfuzz_token_sort_ratio('Calabria', 'Calabria')` -> `100`
-    - `score_medio` = `(93.3 + 100) / 2` = **`96.65`**
-
-  Il sistema sceglie il record `102` come *best match* per il record `1`, poiché ha lo `score_medio` più alto e superiore alla soglia.
-
-  - **Output Pulito**: Join tra `(1, 102)` e `(2, 103)`.
-  - **Output Ambigui**: Vuoto.
+  Il risultato finale sarà una tabella con le colonne di `input.csv` più il `codice_comune` associato.
