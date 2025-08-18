@@ -14,7 +14,7 @@ commands:
         help: Path to the reference CSV file (e.g., ref.csv).
     flags:
       - long: --join-pair
-        arg: left_col right_col
+        arg: pair_string
         repeatable: true
         help: Specify a pair of columns for fuzzy joining (e.g., --join-pair ref_col input_col).
         required: true # At least one join pair is required
