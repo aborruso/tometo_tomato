@@ -14,14 +14,12 @@ local SHOW_SCORE="${flags[--show-score]}" # This will be 'true' if present, empt
 # Build the dynamic join columns part of the SQL query
 local JOIN_PAIRS_SQL=""
 local FIRST_PAIR=true
-# Bashly passes repeatable flags as a space-delimited string
-# We need to parse it into an array
-eval "local join_pairs_array=(${flags[--join-pair]})"
+# flags[--join-pair] will now be an array of "ref_col,input_col" strings
+# Loop through each pair string
+for pair_string in "${flags[--join-pair]}"; do
+    # Split the string by comma
+    IFS=',' read -r REF_COL INPUT_COL <<< "$pair_string"
 
-# Loop through the array in steps of 2 (left_col, right_col)
-for (( i=0; i<${#join_pairs_array[@]}; i+=2 )); do
-    local REF_COL="${join_pairs_array[i]}"
-    local INPUT_COL="${join_pairs_array[i+1]}"
     if [ "$FIRST_PAIR" = true ]; then
         JOIN_PAIRS_SQL+="rapidfuzz_ratio(a.$REF_COL, b.$INPUT_COL)"
         FIRST_PAIR=false
@@ -68,7 +66,7 @@ SELECT
     b.*, -- Select all columns from input table
     (
         $JOIN_PAIRS_SQL
-    ) / ((${#join_pairs_array[@]} / 2)) AS avg_score -- Divide by number of pairs
+    ) / ${#flags[--join-pair]} AS avg_score -- Divide by number of pairs
 FROM read_csv_auto('$REFERENCE_FILE', header=true) AS a
 CROSS JOIN read_csv_auto('$INPUT_FILE', header=true) AS b;
 
