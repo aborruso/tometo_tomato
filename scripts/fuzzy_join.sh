@@ -14,11 +14,11 @@
 # -----------------------------------------------------------------------------
 
 # --- Configuration ---
-LEFT_TABLE='data/raw/anagrafica.csv'
-RIGHT_TABLE='data/raw/fatture.csv'
+LEFT_TABLE='data/raw/ref.csv'
+RIGHT_TABLE='data/raw/input.csv'
 OUTPUT_DIR='data/processed'
-OUTPUT_CLEAN="$OUTPUT_DIR/joined_clean.csv"
-OUTPUT_AMBIGUOUS="$OUTPUT_DIR/joined_ambiguous.csv"
+OUTPUT_CLEAN="$OUTPUT_DIR/joined_istat_codes.csv" # Changed output name
+OUTPUT_AMBIGUOUS="$OUTPUT_DIR/ambiguous_istat_matches.csv" # Changed output name
 THRESHOLD=90
 
 # --- Execution ---
@@ -36,44 +36,51 @@ LOAD rapidfuzz;
 -- 1. Calculate scores for all possible pairs
 CREATE OR REPLACE TEMP VIEW all_scores AS
 SELECT
-    a.id_cliente,
-    b.id_fattura,
+    a.regione, # Keep original columns from ref.csv
+    a.comune,
+    a.codice_comune,
+    b.regio, # Keep original columns from input.csv
+    b.comu,
     (
-        rapidfuzz_ratio(a.comune_residenza, b.localita) +
-        rapidfuzz_ratio(a.regione, b.regione_fattura)
+        rapidfuzz_ratio(a.regione, b.regio) +
+        rapidfuzz_ratio(a.comune, b.comu)
     ) / 2 AS avg_score
 FROM read_csv_auto('$LEFT_TABLE', header=true) AS a
 CROSS JOIN read_csv_auto('$RIGHT_TABLE', header=true) AS b;
 
--- 2. Rank pairs by score for each client and identify top scores with ties
+-- 2. Rank pairs by score for each input record and identify top scores with ties
 CREATE OR REPLACE TEMP VIEW ranked_scores AS
 SELECT
     *,
-    DENSE_RANK() OVER(PARTITION BY id_cliente ORDER BY avg_score DESC) as rnk
+    DENSE_RANK() OVER(PARTITION BY comu, regio ORDER BY avg_score DESC) as rnk # Partition by input.csv unique identifier
 FROM all_scores
 WHERE avg_score >= $THRESHOLD;
 
--- 3. Identify clients with ambiguous best matches (ties for the top rank)
-CREATE OR REPLACE TEMP VIEW ambiguous_clients AS
-SELECT id_cliente
+-- 3. Identify input records with ambiguous best matches (ties for the top rank)
+CREATE OR REPLACE TEMP VIEW ambiguous_inputs AS
+SELECT comu, regio
 FROM ranked_scores
 WHERE rnk = 1
-GROUP BY id_cliente
+GROUP BY comu, regio
 HAVING COUNT(*) > 1;
 
 -- 4. Export clean, unambiguous matches (top rank, no ties)
 COPY (
-    SELECT rs.id_cliente, rs.id_fattura, rs.avg_score
+    SELECT
+        rs.regio,
+        rs.comu,
+        rs.codice_comune,
+        rs.avg_score
     FROM ranked_scores rs
-    LEFT JOIN ambiguous_clients ac ON rs.id_cliente = ac.id_cliente
-    WHERE rs.rnk = 1 AND ac.id_cliente IS NULL
+    LEFT JOIN ambiguous_inputs ai ON rs.comu = ai.comu AND rs.regio = ai.regio
+    WHERE rs.rnk = 1 AND ai.comu IS NULL
 ) TO '$OUTPUT_CLEAN' (HEADER, DELIMITER ',');
 
--- 5. Export all potential matches for ambiguous clients
+-- 5. Export all potential matches for ambiguous input records
 COPY (
     SELECT s.*
     FROM all_scores s
-    WHERE s.id_cliente IN (SELECT id_cliente FROM ambiguous_clients)
+    WHERE (s.comu, s.regio) IN (SELECT comu, regio FROM ambiguous_inputs)
 ) TO '$OUTPUT_AMBIGUOUS' (HEADER, DELIMITER ',');
 
 EOF
