@@ -6,17 +6,17 @@
 # Access arguments and flags
 local INPUT_FILE="${args[input_file]}"
 local REFERENCE_FILE="${args[reference_file]}"
-local THRESHOLD="${flags[--threshold]}"
-local OUTPUT_CLEAN="${flags[--output-clean]}"
-local OUTPUT_AMBIGUOUS="${flags[--output-ambiguous]}"
-local SHOW_SCORE="${flags[--show-score]}" # This will be 'true' if present, empty otherwise
+local THRESHOLD="${args[--threshold]}"
+local OUTPUT_CLEAN="${args[--output-clean]}"
+local OUTPUT_AMBIGUOUS="${args[--output-ambiguous]}"
+local SHOW_SCORE="${args[--show-score]}" # Non-empty if the flag is present
 
 # Build the dynamic join columns part of the SQL query
 local JOIN_PAIRS_SQL=""
 local FIRST_PAIR=true
 # Bashly passes repeatable flags as a space-delimited string.
 # We need to parse it into an array.
-eval "local join_pairs_array=(${flags[--join-pair]})"
+eval "local join_pairs_array=(${args[--join-pair]})"
 
 # Loop through each pair string
 for pair_string in "${join_pairs_array[@]}"; do
@@ -37,14 +37,14 @@ local SELECT_CLEAN_COLS="rs.regio, rs.comu" # Base columns from input.csv
 local SELECT_AMBIGUOUS_COLS="s.regio, s.comu" # Base columns from input.csv
 
 # Add fields from reference file if specified
-eval "local add_fields_array=(${flags[--add-field]})"
+eval "local add_fields_array=(${args[--add-field]})"
 for field in "${add_fields_array[@]}"; do
     SELECT_CLEAN_COLS+=", rs.$field"
     SELECT_AMBIGUOUS_COLS+=", s.$field"
 done
 
 # Add avg_score if --show-score flag is present
-if [ "$SHOW_SCORE" = "true" ]; then
+if [[ -n "$SHOW_SCORE" ]]; then
     SELECT_CLEAN_COLS+=", rs.avg_score"
     SELECT_AMBIGUOUS_COLS+=", s.avg_score"
 fi
