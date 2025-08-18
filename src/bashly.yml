@@ -1,0 +1,38 @@
+name: fuzzy-join-cli
+help: CLI tool for performing fuzzy joins between CSV files.
+version: 0.1.0
+
+commands:
+  - name: fuzzy-join
+    help: Perform a fuzzy join operation.
+    args:
+      - name: input_file
+        required: true
+        help: Path to the input CSV file to correct/enrich (e.g., input.csv).
+      - name: reference_file
+        required: true
+        help: Path to the reference CSV file (e.g., ref.csv).
+    flags:
+      - long: --join-pair
+        arg: left_col right_col
+        repeatable: true
+        help: Specify a pair of columns for fuzzy joining (e.g., --join-pair ref_col input_col).
+        required: true # At least one join pair is required
+      - long: --show-score
+        help: Include the average similarity score in the output.
+      - long: --add-field
+        arg: field_name
+        repeatable: true
+        help: Specify a field from the reference file to add to the output (e.g., --add-field codice_comune).
+      - long: --threshold
+        arg: value
+        default: "90"
+        help: Minimum average similarity score for a match (0-100).
+      - long: --output-clean
+        arg: path
+        default: data/processed/joined_istat_codes.csv
+        help: Path for the output file with clean matches.
+      - long: --output-ambiguous
+        arg: path
+        default: data/processed/ambiguous_istat_matches.csv
+        help: Path for the output file with ambiguous matches.
