@@ -32,10 +32,9 @@ flags:
   - long: --output-clean
     short: -o
     arg: path
-    default: data/processed/joined_istat_codes.csv
+    required: true
     help: "File di output per i match puliti."
   - long: --output-ambiguous
     short: -u
     arg: path
-    default: data/processed/ambiguous_istat_matches.csv
-    help: "File di output per i match ambigui."
+    help: "File di output per i match ambigui. Se non specificato, non viene generato."

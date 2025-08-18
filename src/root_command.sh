@@ -92,28 +92,67 @@ INSTALL rapidfuzz FROM community;
 LOAD rapidfuzz;
 -- Script per LEFT JOIN che mantiene tutti i record del file di input
 COPY (
-    WITH input_with_id AS (
-        SELECT ROW_NUMBER() OVER () AS input_id, *
-        FROM read_csv_auto('$INPUT_FILE', header=true)
-    ),
-    -- Calcoliamo tutti i punteggi per ogni combinazione
-    all_scores AS (
-        SELECT inp.input_id, inp.*, ref.*, ($JOIN_PAIRS_SQL) / ${#join_pairs[@]} AS avg_score
-        FROM read_csv_auto('$REFERENCE_FILE', header=true) AS ref
-        CROSS JOIN input_with_id AS inp
-    ),
-    -- Per ogni record di input, troviamo il miglior match che supera la soglia
-    best_matches AS (
-        SELECT *, ROW_NUMBER() OVER(PARTITION BY input_id ORDER BY avg_score DESC) as rn
-        FROM all_scores
-        WHERE avg_score >= $THRESHOLD
-    )
-    -- LEFT JOIN: tutti i record di input + il miglior match se esiste
-    SELECT $SELECT_CLEAN_COLS
-    FROM input_with_id inp
-    LEFT JOIN (SELECT * FROM best_matches WHERE rn = 1) bst ON inp.input_id = bst.input_id
+	WITH input_with_id AS (
+		SELECT ROW_NUMBER() OVER () AS input_id, *
+		FROM read_csv_auto('$INPUT_FILE', header=true)
+	),
+	-- Calcoliamo tutti i punteggi per ogni combinazione
+	all_scores AS (
+		SELECT inp.input_id, inp.*, ref.*, ($JOIN_PAIRS_SQL) / ${#join_pairs[@]} AS avg_score
+		FROM read_csv_auto('$REFERENCE_FILE', header=true) AS ref
+		CROSS JOIN input_with_id AS inp
+	),
+	-- Per ogni record di input, troviamo il miglior match che supera la soglia
+	best_matches AS (
+		SELECT *, ROW_NUMBER() OVER(PARTITION BY input_id ORDER BY avg_score DESC) as rn
+		FROM all_scores
+		WHERE avg_score >= $THRESHOLD
+	)
+	-- LEFT JOIN: tutti i record di input + il miglior match se esiste
+	SELECT $SELECT_CLEAN_COLS
+	FROM input_with_id inp
+	LEFT JOIN (SELECT * FROM best_matches WHERE rn = 1) bst ON inp.input_id = bst.input_id
 ) TO '$OUTPUT_CLEAN' (HEADER, DELIMITER ',');
 EOF
+
+# Genera l'output ambiguo solo se il parametro è valorizzato
+if [[ -n "$OUTPUT_AMBIGUOUS" ]]; then
+duckdb <<EOF
+INSTALL rapidfuzz FROM community;
+LOAD rapidfuzz;
+COPY (
+	WITH input_with_id AS (
+		SELECT ROW_NUMBER() OVER () AS input_id, *
+		FROM read_csv_auto('$INPUT_FILE', header=true)
+	),
+	all_scores AS (
+		SELECT inp.input_id, inp.*, ref.*, ($JOIN_PAIRS_SQL) / ${#join_pairs[@]} AS avg_score
+		FROM read_csv_auto('$REFERENCE_FILE', header=true) AS ref
+		CROSS JOIN input_with_id AS inp
+	),
+	best_matches AS (
+		SELECT *, ROW_NUMBER() OVER(PARTITION BY input_id ORDER BY avg_score DESC) as rn
+		FROM all_scores
+		WHERE avg_score >= $THRESHOLD
+	),
+	ambiguous_inputs AS (
+		SELECT input_id FROM best_matches WHERE rn = 1 GROUP BY input_id HAVING COUNT(*) > 1
+	)
+	SELECT $SELECT_AMBIGUOUS_COLS
+	FROM all_scores s
+	WHERE s.input_id IN (SELECT input_id FROM ambiguous_inputs)
+) TO '$OUTPUT_AMBIGUOUS' (HEADER, DELIMITER ',');
+EOF
+	if [ -f "$OUTPUT_AMBIGUOUS" ]; then
+		LINE_COUNT=$(wc -l < "$OUTPUT_AMBIGUOUS")
+		if [ "$LINE_COUNT" -eq 1 ]; then
+			rm "$OUTPUT_AMBIGUOUS"
+			echo "ℹ️ Nessun record ambiguo trovato. Il file $OUTPUT_AMBIGUOUS è stato cancellato."
+		else
+			echo "⚠️ Sono stati trovati record ambigui! Controlla il file: $OUTPUT_AMBIGUOUS"
+		fi
+	fi
+fi
 if [ -f "$OUTPUT_AMBIGUOUS" ]; then
 	LINE_COUNT=$(wc -l < "$OUTPUT_AMBIGUOUS")
 	if [ "$LINE_COUNT" -eq 1 ]; then
