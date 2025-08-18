@@ -36,10 +36,10 @@ LOAD rapidfuzz;
 -- 1. Calculate scores for all possible pairs
 CREATE OR REPLACE TEMP VIEW all_scores AS
 SELECT
-    a.regione, # Keep original columns from ref.csv
+    a.regione, -- Keep original columns from ref.csv
     a.comune,
     a.codice_comune,
-    b.regio, # Keep original columns from input.csv
+    b.regio, -- Keep original columns from input.csv
     b.comu,
     (
         rapidfuzz_ratio(a.regione, b.regio) +
@@ -52,7 +52,7 @@ CROSS JOIN read_csv_auto('$RIGHT_TABLE', header=true) AS b;
 CREATE OR REPLACE TEMP VIEW ranked_scores AS
 SELECT
     *,
-    DENSE_RANK() OVER(PARTITION BY comu, regio ORDER BY avg_score DESC) as rnk # Partition by input.csv unique identifier
+    DENSE_RANK() OVER(PARTITION BY comu, regio ORDER BY avg_score DESC) as rnk -- Partition by input.csv unique identifier
 FROM all_scores
 WHERE avg_score >= $THRESHOLD;
 
