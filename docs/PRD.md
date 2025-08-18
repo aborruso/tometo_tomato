@@ -99,12 +99,19 @@ Questo caso d'uso dimostra l'associazione di codici ISTAT a un'anagrafica non uf
 - **Obiettivo**
   Associare il `codice_comune` dalla Tabella A (`ref.csv`) ai record della Tabella B (`input.csv`).
 
-- **Configurazione**
-  - Join su due coppie di colonne:
-    1. `regione` (da `ref.csv`) -> `regio` (da `input.csv`)
-    2. `comune` (da `ref.csv`) -> `comu` (da `input.csv`)
-  - Soglia di punteggio medio: `90`.
-  - Funzione: `rapidfuzz_ratio` (o altra funzione configurata).
+- **Configurazione (Esempio di Chiamata CLI)**
+  Il processo verrà eseguito tramite il comando CLI `fuzzy-join-cli fuzzy-join` con i seguenti parametri:
+
+  ```bash
+  ./fuzzy-cli fuzzy-join \
+    input.csv \
+    ref.csv \
+    --join-pair regione regio \
+    --join-pair comune comu \
+    --add-field codice_comune \
+    --threshold 90 \
+    --show-score
+  ```
 
 - **Risultato Atteso**
 
@@ -116,3 +123,4 @@ Questo caso d'uso dimostra l'associazione di codici ISTAT a un'anagrafica non uf
   - `input.csv` (Rma, Lazio) -> `ref.csv` (Roma, Lazio) con `codice_comune` 058091.
 
   Il risultato finale sarà una tabella con le colonne di `input.csv` più il `codice_comune` associato.
+
