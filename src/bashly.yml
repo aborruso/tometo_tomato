@@ -1,38 +1,35 @@
-name: fuzzy-join-cli
-help: CLI tool for performing fuzzy joins between CSV files.
+name: tometo_tomato
+help: "Esegue un join fuzzy tra due file CSV, associando record simili anche in presenza di errori di battitura. Utilizza DuckDB e rapidfuzz per calcolare la somiglianza tra le colonne specificate. Output: un file con i match puliti e uno con i casi ambigui. Esempio: tometo_tomato input.csv ref.csv --join-pair 'regione,regio' --join-pair 'comune,comu' --add-field codice_comune --threshold 90 --show-score"
 version: 0.1.0
 
-commands:
-  - name: fuzzy-join
-    help: Perform a fuzzy join operation.
-    args:
-      - name: input_file
-        required: true
-        help: Path to the input CSV file to correct/enrich (e.g., input.csv).
-      - name: reference_file
-        required: true
-        help: Path to the reference CSV file (e.g., ref.csv).
-    flags:
-      - long: --join-pair
-        arg: pair_string
-        repeatable: true
-        help: Specify a pair of columns for fuzzy joining (e.g., --join-pair ref_col input_col).
-        required: true # At least one join pair is required
-      - long: --show-score
-        help: Include the average similarity score in the output.
-      - long: --add-field
-        arg: field_name
-        repeatable: true
-        help: Specify a field from the reference file to add to the output (e.g., --add-field codice_comune).
-      - long: --threshold
-        arg: value
-        default: "90"
-        help: Minimum average similarity score for a match (0-100).
-      - long: --output-clean
-        arg: path
-        default: data/processed/joined_istat_codes.csv
-        help: Path for the output file with clean matches.
-      - long: --output-ambiguous
-        arg: path
-        default: data/processed/ambiguous_istat_matches.csv
-        help: Path for the output file with ambiguous matches.
+args:
+  - name: input_file
+    required: true
+    help: "File CSV da arricchire/correggere (es: input.csv)"
+  - name: reference_file
+    required: true
+    help: "File CSV di riferimento ufficiale (es: ref.csv)"
+
+flags:
+  - long: --join-pair
+    arg: pair_string
+    repeatable: true
+    help: "Coppia di colonne da confrontare (es: --join-pair regione regio). Puoi specificare più coppie per join multi-colonna. Se omesso, verranno usate le colonne con lo stesso nome."
+  - long: --show-score
+    help: "Mostra il punteggio di somiglianza medio nel risultato."
+  - long: --add-field
+    arg: field_name
+    repeatable: true
+    help: "Campo del file di riferimento da aggiungere all'output (es: codice_comune)."
+  - long: --threshold
+    arg: value
+    default: "90"
+    help: "Soglia minima di somiglianza (0-100) per considerare un match valido."
+  - long: --output-clean
+    arg: path
+    default: data/processed/joined_istat_codes.csv
+    help: "File di output per i match puliti."
+  - long: --output-ambiguous
+    arg: path
+    default: data/processed/ambiguous_istat_matches.csv
+    help: "File di output per i match ambigui."
