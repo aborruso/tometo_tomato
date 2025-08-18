@@ -70,32 +70,45 @@ Il processo deve produrre un log di esecuzione che riporti le statistiche chiave
 - **Libreria di Fuzzy Matching**: Estensione `rapidfuzz` per DuckDB
 - **Orchestrazione**: Script Python o Shell per automatizzare il flusso.
 
-## 5. Caso d'Uso Esemplificativo
+## 5. Caso d'Uso Esemplificativo (Join Multi-colonna)
 
 - **Tabella A (`anagrafica.csv`)**
 
-| id_cliente | comune_residenza      |
-| :--------- | :-------------------- |
-| 1          | 'Reggio di Calabria'  |
-| 2          | 'Milano'              |
+| id_cliente | comune_residenza     | regione    |
+| :--------- | :------------------- | :--------- |
+| 1          | 'Reggio di Calabria' | 'Calabria' |
+| 2          | 'Milano'             | 'Lombardia'|
 
 - **Tabella B (`fatture.csv`)**
 
-| id_fattura | localita        | importo |
-| :--------- | :-------------- | :------ |
-| 101        | 'Reggio Calabria' | 500     |
-| 102        | 'Reggiò Calabria' | 600     |
-| 103        | 'Milano'          | 700     |
+| id_fattura | localita        | regione_fattura | importo |
+| :--------- | :-------------- | :-------------- | :------ |
+| 101        | 'Reggio Calabria' | 'Calabria.'     | 500     |
+| 102        | 'Reggiò Calabria' | 'Calabria'      | 600     |
+| 103        | 'Milano'          | 'Lombardia'     | 700     |
 
 - **Configurazione**
-  - Join tra `comune_residenza` e `localita`.
-  - Soglia: `90`.
+  - Join su due coppie di colonne:
+    1. `comune_residenza` -> `localita`
+    2. `regione` -> `regione_fattura`
+  - Soglia di punteggio medio: `90`.
   - Funzione: `rapidfuzz_token_sort_ratio`.
 
 - **Risultato Atteso**
-  - `rapidfuzz_token_sort_ratio('Reggio di Calabria', 'Reggio Calabria')` -> `~96`
-  - `rapidfuzz_token_sort_ratio('Reggio di Calabria', 'Reggiò Calabria')` -> `~93`
-  - Il record `1` di A matcha con `101` di B (punteggio più alto).
-  - Il record `2` di A matcha con `103` di B (punteggio `100`).
-  - **Output Pulito**: Join tra `(1, 101)` e `(2, 103)`.
+
+  Per il record `1` della Tabella A, il sistema valuta entrambe le possibili corrispondenze nella Tabella B:
+
+  - **Match con record `101`**:
+    - `score_comune` = `rapidfuzz_token_sort_ratio('Reggio di Calabria', 'Reggio Calabria')` -> `~96`
+    - `score_regione` = `rapidfuzz_token_sort_ratio('Calabria', 'Calabria.')` -> `~92.3`
+    - `score_medio` = `(96 + 92.3) / 2` = **`94.15`**
+
+  - **Match con record `102`**:
+    - `score_comune` = `rapidfuzz_token_sort_ratio('Reggio di Calabria', 'Reggiò Calabria')` -> `~93.3`
+    - `score_regione` = `rapidfuzz_token_sort_ratio('Calabria', 'Calabria')` -> `100`
+    - `score_medio` = `(93.3 + 100) / 2` = **`96.65`**
+
+  Il sistema sceglie il record `102` come *best match* per il record `1`, poiché ha lo `score_medio` più alto e superiore alla soglia.
+
+  - **Output Pulito**: Join tra `(1, 102)` e `(2, 103)`.
   - **Output Ambigui**: Vuoto.
