@@ -114,7 +114,7 @@ if [ -f "$OUTPUT_AMBIGUOUS" ]; then
         rm "$OUTPUT_AMBIGUOUS"
         echo "🗑️ Deleted empty ambiguous matches file: $OUTPUT_AMBIGUOUS"
     fi
-fl
+fi
 
 echo "✅ Fuzzy join complete."
 echo "- Clean matches saved to: $OUTPUT_CLEAN"
