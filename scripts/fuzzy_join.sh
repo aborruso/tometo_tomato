@@ -39,8 +39,8 @@ SELECT
     a.id_cliente,
     b.id_fattura,
     (
-        rapidfuzz_token_sort_ratio(a.comune_residenza, b.localita) +
-        rapidfuzz_token_sort_ratio(a.regione, b.regione_fattura)
+        rapidfuzz_ratio(a.comune_residenza, b.localita) +
+        rapidfuzz_ratio(a.regione, b.regione_fattura)
     ) / 2 AS avg_score
 FROM read_csv_auto('$LEFT_TABLE', header=true) AS a
 CROSS JOIN read_csv_auto('$RIGHT_TABLE', header=true) AS b;
