@@ -47,26 +47,53 @@ root_command() {
   FIRST_PAIR=true
   for pair_string in "${join_pairs[@]}"; do
   	IFS=',' read -r REF_COL INPUT_COL <<< "$pair_string"
+  	# Rimuovo virgolette, backslash e spazi
+  	REF_COL="${REF_COL//\"/}"
+  	REF_COL="${REF_COL//\'/}"
+  	REF_COL="${REF_COL//\\/}"
+  	REF_COL="${REF_COL// /}"
+  	INPUT_COL="${INPUT_COL//\"/}"
+  	INPUT_COL="${INPUT_COL//\'/}"
+  	INPUT_COL="${INPUT_COL//\\/}"
+  	INPUT_COL="${INPUT_COL// /}"
   	if [ "$FIRST_PAIR" = true ]; then
-  		JOIN_PAIRS_SQL+="rapidfuzz_ratio(a.$REF_COL, b.$INPUT_COL)"
+  		JOIN_PAIRS_SQL+="rapidfuzz_ratio(LOWER(ref.$REF_COL), LOWER(inp.$INPUT_COL))"
   		FIRST_PAIR=false
   	else
-  		JOIN_PAIRS_SQL+=" + rapidfuzz_ratio(a.$REF_COL, b.$INPUT_COL)"
+  		JOIN_PAIRS_SQL+=" + rapidfuzz_ratio(LOWER(ref.$REF_COL), LOWER(inp.$INPUT_COL))"
   	fi
   done
 
-  # Build SELECT clause
-  SELECT_CLEAN_COLS="b.*"
-  SELECT_AMBIGUOUS_COLS="b.*"
+  # Build SELECT clause for LEFT JOIN
+  INPUT_HEADER=$(head -n 1 "$INPUT_FILE")
+  IFS=',' read -r -a input_cols <<< "$INPUT_HEADER"
+  INPUT_COLS_LIST=""
+  INPUT_COLS_LIST_NOPREFIX=""
+  INPUT_COLS_SELECT=""
+  for col in "${input_cols[@]}"; do
+  	col_clean="${col//\"/}"
+  	col_clean="${col_clean// /}"
+  	if [[ -z "$INPUT_COLS_LIST" ]]; then
+  		INPUT_COLS_LIST="b.$col_clean"
+  		INPUT_COLS_LIST_NOPREFIX="$col_clean"
+  		INPUT_COLS_SELECT="inp.$col_clean"
+  	else
+  		INPUT_COLS_LIST+=" , b.$col_clean"
+  		INPUT_COLS_LIST_NOPREFIX+=" , $col_clean"
+  		INPUT_COLS_SELECT+=" , inp.$col_clean"
+  	fi
+  done
+  SELECT_CLEAN_COLS="$INPUT_COLS_SELECT"
+  SELECT_AMBIGUOUS_COLS="$INPUT_COLS_LIST_NOPREFIX"
   if [[ -n "${args[--add-field]}" ]]; then
   	IFS=' ' read -r -a add_fields <<< "${args[--add-field]}"
   	for field in "${add_fields[@]}"; do
-  		SELECT_CLEAN_COLS+=", a.$field"
+  		SELECT_CLEAN_COLS+=", bst.$field"
   		SELECT_AMBIGUOUS_COLS+=", a.$field"
   	done
   fi
   if [[ -n "$SHOW_SCORE" ]]; then
-  	SELECT_CLEAN_COLS+=", avg_score"
+  	SELECT_CLEAN_COLS+=", bst.avg_score"
   	SELECT_AMBIGUOUS_COLS+=", avg_score"
   fi
 
@@ -75,27 +102,29 @@ root_command() {
   duckdb <<EOF
 INSTALL rapidfuzz FROM community;
 LOAD rapidfuzz;
-CREATE OR REPLACE TEMP VIEW all_scores AS
-SELECT a.*, b.*, ($JOIN_PAIRS_SQL) / ${#join_pairs[@]} AS avg_score
-FROM read_csv_auto('$REFERENCE_FILE', header=true) AS a
-CROSS JOIN read_csv_auto('$INPUT_FILE', header=true) AS b;
-CREATE OR REPLACE TEMP VIEW ranked_scores AS
-SELECT *, DENSE_RANK() OVER(PARTITION BY b.* ORDER BY avg_score DESC) as rnk
-FROM all_scores
-WHERE avg_score >= $THRESHOLD;
-CREATE OR REPLACE TEMP VIEW ambiguous_inputs AS
-SELECT b.* FROM ranked_scores WHERE rnk = 1 GROUP BY b.* HAVING COUNT(*) > 1;
+-- Script per LEFT JOIN che mantiene tutti i record del file di input
 COPY (
-	SELECT $SELECT_CLEAN_COLS
-	FROM ranked_scores rs
-	LEFT JOIN ambiguous_inputs ai ON rs.rowid = ai.rowid
-	WHERE rs.rnk = 1 AND ai.rowid IS NULL
+    WITH input_with_id AS (
+        SELECT ROW_NUMBER() OVER () AS input_id, *
+        FROM read_csv_auto('$INPUT_FILE', header=true)
+    ),
+    -- Calcoliamo tutti i punteggi per ogni combinazione
+    all_scores AS (
+        SELECT inp.input_id, inp.*, ref.*, ($JOIN_PAIRS_SQL) / ${#join_pairs[@]} AS avg_score
+        FROM read_csv_auto('$REFERENCE_FILE', header=true) AS ref
+        CROSS JOIN input_with_id AS inp
+    ),
+    -- Per ogni record di input, troviamo il miglior match che supera la soglia
+    best_matches AS (
+        SELECT *, ROW_NUMBER() OVER(PARTITION BY input_id ORDER BY avg_score DESC) as rn
+        FROM all_scores
+        WHERE avg_score >= $THRESHOLD
+    )
+    -- LEFT JOIN: tutti i record di input + il miglior match se esiste
+    SELECT $SELECT_CLEAN_COLS
+    FROM input_with_id inp
+    LEFT JOIN (SELECT * FROM best_matches WHERE rn = 1) bst ON inp.input_id = bst.input_id
 ) TO '$OUTPUT_CLEAN' (HEADER, DELIMITER ',');
-COPY (
-	SELECT $SELECT_AMBIGUOUS_COLS
-	FROM all_scores s
-	WHERE s.rowid IN (SELECT rowid FROM ambiguous_inputs)
-) TO '$OUTPUT_AMBIGUOUS' (HEADER, DELIMITER ',');
 EOF
   if [ -f "$OUTPUT_AMBIGUOUS" ]; then
   	LINE_COUNT=$(wc -l < "$OUTPUT_AMBIGUOUS")
