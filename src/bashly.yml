@@ -12,24 +12,30 @@ args:
 
 flags:
   - long: --join-pair
+    short: -j
     arg: pair_string
     repeatable: true
     help: "Coppia di colonne da confrontare (es: --join-pair regione regio). Puoi specificare più coppie per join multi-colonna. Se omesso, verranno usate le colonne con lo stesso nome."
   - long: --show-score
+    short: -s
     help: "Mostra il punteggio di somiglianza medio nel risultato."
   - long: --add-field
+    short: -a
     arg: field_name
     repeatable: true
     help: "Campo del file di riferimento da aggiungere all'output (es: codice_comune)."
   - long: --threshold
+    short: -t
     arg: value
     default: "90"
     help: "Soglia minima di somiglianza (0-100) per considerare un match valido."
   - long: --output-clean
+    short: -o
     arg: path
     default: data/processed/joined_istat_codes.csv
     help: "File di output per i match puliti."
   - long: --output-ambiguous
+    short: -u
     arg: path
     default: data/processed/ambiguous_istat_matches.csv
     help: "File di output per i match ambigui."
