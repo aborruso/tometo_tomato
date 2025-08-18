@@ -14,9 +14,12 @@ local SHOW_SCORE="${flags[--show-score]}" # This will be 'true' if present, empt
 # Build the dynamic join columns part of the SQL query
 local JOIN_PAIRS_SQL=""
 local FIRST_PAIR=true
-# flags[--join-pair] will now be an array of "ref_col,input_col" strings
+# Bashly passes repeatable flags as a space-delimited string.
+# We need to parse it into an array.
+eval "local join_pairs_array=(${flags[--join-pair]})"
+
 # Loop through each pair string
-for pair_string in "${flags[--join-pair]}"; do
+for pair_string in "${join_pairs_array[@]}"; do
     # Split the string by comma
     IFS=',' read -r REF_COL INPUT_COL <<< "$pair_string"
 
@@ -66,7 +69,7 @@ SELECT
     b.*, -- Select all columns from input table
     (
         $JOIN_PAIRS_SQL
-    ) / ${#flags[--join-pair]} AS avg_score -- Divide by number of pairs
+    ) / ${#join_pairs_array[@]} AS avg_score -- Divide by number of pairs
 FROM read_csv_auto('$REFERENCE_FILE', header=true) AS a
 CROSS JOIN read_csv_auto('$INPUT_FILE', header=true) AS b;
 
@@ -111,7 +114,7 @@ if [ -f "$OUTPUT_AMBIGUOUS" ]; then
         rm "$OUTPUT_AMBIGUOUS"
         echo "🗑️ Deleted empty ambiguous matches file: $OUTPUT_AMBIGUOUS"
     fi
-fi
+fl
 
 echo "✅ Fuzzy join complete."
 echo "- Clean matches saved to: $OUTPUT_CLEAN"
