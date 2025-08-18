@@ -128,6 +128,8 @@ def main():
     input_header = read_header(args.input_file)
     input_cols = input_header
 
+    
+
     # prepare select clauses
     add_fields = []
     if args.add_field:
@@ -166,55 +168,47 @@ def main():
                 print("Nessuna funzione di fuzzy disponibile in DuckDB (rapidfuzz, levenshtein o damerau_levenshtein). Installare l'estensione rapidfuzz o usare una versione di DuckDB che include levenshtein.")
                 sys.exit(1)
 
-    # Build full SQL for clean output
     # avg_score = (score_expr_base) / num_pairs
     num_pairs = len(join_pairs)
     avg_score_expr = f"({score_expr_base}) / {num_pairs}"
 
-    # Build DuckDB SQL
+    # Create temporary views for common CTEs
+    con.execute(f"""
+        CREATE TEMP VIEW input_with_id AS
+        SELECT ROW_NUMBER() OVER () AS input_id, *
+        FROM read_csv_auto('{args.input_file}', header=true, all_varchar=true);
+    """)
+
+    con.execute(f"""
+        CREATE TEMP VIEW all_scores AS
+        SELECT inp.input_id, inp.*, ref.*, {avg_score_expr} AS avg_score
+        FROM read_csv_auto('{args.reference_file}', header=true, all_varchar=true) AS ref
+        CROSS JOIN input_with_id AS inp;
+    """)
+
+    con.execute(f"""
+        CREATE TEMP VIEW best_matches AS
+        SELECT *, RANK() OVER(PARTITION BY input_id ORDER BY avg_score DESC) as rnk
+        FROM all_scores
+        WHERE avg_score >= {args.threshold};
+    """)
+
+    # Build DuckDB SQL for clean output
     sql_clean = f"""
 COPY (
-    WITH input_with_id AS (
-        SELECT ROW_NUMBER() OVER () AS input_id, *
-        FROM read_csv_auto('{args.input_file}', header=true)
-    ),
-    all_scores AS (
-        SELECT inp.input_id, inp.*, ref.*, {avg_score_expr} AS avg_score
-        FROM read_csv_auto('{args.reference_file}', header=true) AS ref
-        CROSS JOIN input_with_id AS inp
-    ),
-    best_matches AS (
-        SELECT *, ROW_NUMBER() OVER(PARTITION BY input_id ORDER BY avg_score DESC) as rn
-        FROM all_scores
-        WHERE avg_score >= {args.threshold}
-    )
     SELECT {select_clean_cols}
     FROM input_with_id inp
-    LEFT JOIN (SELECT * FROM best_matches WHERE rn = 1) bst ON inp.input_id = bst.input_id
+    LEFT JOIN (SELECT * FROM best_matches WHERE rnk = 1) bst ON inp.input_id = bst.input_id
 ) TO '{args.output_clean}' (HEADER, DELIMITER ',');
 """
 
     con.execute(sql_clean)
 
-    # ambiguous file
+    # Build DuckDB SQL for ambiguous output
     sql_amb = f"""
 COPY (
-    WITH input_with_id AS (
-        SELECT ROW_NUMBER() OVER () AS input_id, *
-        FROM read_csv_auto('{args.input_file}', header=true)
-    ),
-    all_scores AS (
-        SELECT inp.input_id, inp.*, ref.*, {avg_score_expr} AS avg_score
-        FROM read_csv_auto('{args.reference_file}', header=true) AS ref
-        CROSS JOIN input_with_id AS inp
-    ),
-    best_matches AS (
-        SELECT *, ROW_NUMBER() OVER(PARTITION BY input_id ORDER BY avg_score DESC) as rn
-        FROM all_scores
-        WHERE avg_score >= {args.threshold}
-    ),
-    ambiguous_inputs AS (
-        SELECT input_id FROM best_matches WHERE rn = 1 GROUP BY input_id HAVING COUNT(*) > 1
+    WITH ambiguous_inputs AS (
+        SELECT input_id FROM best_matches WHERE rnk = 1 GROUP BY input_id HAVING COUNT(*) > 1
     )
     SELECT {select_ambiguous_cols}
     FROM all_scores s
