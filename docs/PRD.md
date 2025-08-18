@@ -1,6 +1,6 @@
 # PRD: Procedura di Join Flessibile (Fuzzy Join)
 
-## 1. Introduzione
+## Introduzione
 
 ### Contesto
 
@@ -12,7 +12,7 @@ Questo documento definisce i requisiti per una procedura di "fuzzy join" che per
 
 Creare un processo robusto, configurabile e performante per eseguire il join di tabelle tramite *fuzzy string matching*. Il sistema dovrà identificare la migliore corrispondenza possibile per ogni record, gestire in modo trasparente le ambiguità e fornire output chiari e pronti per l'analisi.
 
-## 2. Requisiti Funzionali
+## Requisiti Funzionali
 
 ### RF1: Logica di Join Basata su Somiglianza
 
@@ -44,7 +44,7 @@ La procedura produce due output principali:
 1.  **Tabella di Join Pulita**: File con i record che hanno trovato una corrispondenza univoca e superiore alla soglia.
 2.  **File di Log delle Ambiguità**: File con i record scartati per le ragioni descritte in RF5.
 
-## 3. Requisiti Non Funzionali
+## Requisiti Non Funzionali
 
 ### RNF1: Performance
 
@@ -63,13 +63,13 @@ L'utente può configurare facilmente:
 
 Il processo produce un log di esecuzione con statistiche chiave: numero di record in input, join riusciti, casi ambigui.
 
-## 4. Stack Tecnologico
+## Stack Tecnologico
 
 - **Motore di elaborazione**: DuckDB
 - **Libreria di Fuzzy Matching**: Estensione `rapidfuzz` per DuckDB
 - **Orchestrazione**: Script Shell (CLI monocomando: `tometo_tomato`)
 
-## 5. Caso d'Uso Esemplificativo (Associazione Codici ISTAT)
+## Caso d'Uso Esemplificativo (Associazione Codici ISTAT)
 
 Questo caso d'uso dimostra l'associazione di codici ISTAT a un'anagrafica non ufficiale, gestendo le imprecisioni nei nomi delle località.
 
