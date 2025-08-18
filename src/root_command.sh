@@ -32,7 +32,7 @@ fi
 JOIN_PAIRS_SQL=""
 FIRST_PAIR=true
 for pair_string in "${join_pairs[@]}"; do
-	IFS=',' read -r REF_COL INPUT_COL <<< "$pair_string"
+	IFS=',' read -r INPUT_COL REF_COL <<< "$pair_string"
 	# Rimuovo virgolette, backslash e spazi
 	REF_COL="${REF_COL//\"/}"
 	REF_COL="${REF_COL//\'/}"
@@ -71,13 +71,11 @@ for col in "${input_cols[@]}"; do
 done
 SELECT_CLEAN_COLS="$INPUT_COLS_SELECT"
 SELECT_AMBIGUOUS_COLS="$INPUT_COLS_LIST_NOPREFIX"
-# Aggiungi sempre il codice_comune_alfanumerico dal file di riferimento
-SELECT_CLEAN_COLS+=", bst.codice_comune_alfanumerico"
 if [[ -n "${args[--add-field]}" ]]; then
 	IFS=' ' read -r -a add_fields <<< "${args[--add-field]}"
 	for field in "${add_fields[@]}"; do
 		SELECT_CLEAN_COLS+=", bst.$field"
-		SELECT_AMBIGUOUS_COLS+=", a.$field"
+		SELECT_AMBIGUOUS_COLS+=", s.$field"
 	done
 fi
 if [[ -n "$SHOW_SCORE" ]]; then
