@@ -1,3 +1,31 @@
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "tometo_tomato"
+version = "0.1.0"
+description = "A utility for fuzzy joining tabular data using DuckDB."
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+authors = [
+  {name = "Andrea Borruso", email = "aborruso@gmail.com"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "duckdb",
+    "rapidfuzz",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/aborruso/tometo_tomato"
+
+[project.scripts]
+tometo_tomato = "tometo_tomato:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
