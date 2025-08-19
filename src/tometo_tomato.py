@@ -92,16 +92,24 @@ def prepare_select_clauses(join_pairs: List[str], add_fields: List[str], show_sc
         input_cols_select += f", bst.\"{ref_col}\" AS \"ref_{ref_col}\""
         input_cols_noprefix += f", \"ref_{ref_col}\""
     
+    # For ambiguous output, we need to use the original column names from all_scores table
+    ambiguous_cols_select = ", ".join([f"\"{c}\"" for c in selected_input_cols_list])
+    for ref_col in selected_ref_cols_list:
+        ambiguous_cols_select += f", \"{ref_col}\""
+    
     # Add any additional fields specified with --add-field
     if add_fields:
         for f in add_fields:
             input_cols_select += f", bst.\"{f}\""
             input_cols_noprefix += f", \"{f}\""
+            ambiguous_cols_select += f", \"{f}\""
     
     if show_score:
         input_cols_select += ", bst.avg_score"
         input_cols_noprefix += ", avg_score"
-    return input_cols_select, input_cols_noprefix, selected_input_cols_list
+        ambiguous_cols_select += ", avg_score"
+    
+    return input_cols_select, input_cols_noprefix, ambiguous_cols_select, selected_input_cols_list
 
 
 def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
@@ -156,7 +164,7 @@ def main():
             for part in a.split():
                 add_fields.append(part.strip())
 
-    select_clean_cols, select_ambiguous_cols, selected_input_cols_list = prepare_select_clauses(join_pairs, add_fields, args.show_score)
+    select_clean_cols, select_ambiguous_cols, ambiguous_cols_select, selected_input_cols_list = prepare_select_clauses(join_pairs, add_fields, args.show_score)
 
     con = duckdb.connect(database=":memory:")
     using_rapidfuzz = try_load_rapidfuzz(con)
@@ -246,7 +254,7 @@ COPY (
     WITH ambiguous_inputs AS (
         SELECT input_id FROM best_matches WHERE rnk = 1 GROUP BY input_id HAVING COUNT(*) > 1
     )
-    SELECT DISTINCT {select_ambiguous_cols}
+    SELECT DISTINCT {ambiguous_cols_select}
     FROM all_scores s
     WHERE s.input_id IN (SELECT input_id FROM ambiguous_inputs)
 ) TO '{args.output_ambiguous}' (HEADER, DELIMITER ',');
