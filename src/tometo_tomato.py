@@ -8,19 +8,34 @@ it falls back to built-in `levenshtein`/`damerau_levenshtein` functions.
 Usage example:
   python3 src/fuzzy_join.py input.csv ref.csv --threshold 85 --add-field codice_comune --show-score
 """
-import argparse
+import os
 import sys
+
+# Add src directory to Python path to allow importing _version.py
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
+
+try:
+    from _version import version as __version__
+except ImportError:
+    __version__ = "unknown"
+
+
+import argparse
 try:
     import duckdb
 except Exception as e:
     print("Error: duckdb Python package is required but not installed. Install via 'pip install duckdb'", file=sys.stderr)
     raise
-import os
 from typing import List
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Fuzzy join utility using DuckDB")
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}"
+    )
     parser.add_argument("input_file")
     parser.add_argument("reference_file")
     parser.add_argument("--threshold", "-t", type=float, default=85.0)
