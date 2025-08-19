@@ -74,7 +74,7 @@ Areas for improvement & concrete suggestions
     identifiers (edge-cases with spaces, quotes, UTF-8).
     – Validate that --output-clean and --output-ambiguous don’t overwrite one of the input files.
   6 Logging & UX
-    – Replace print with the stdlib logging module (or rich.console) to offer --verbose / --quiet.
+
     – Emit a JSON or TSV summary line for easy downstream parsing (records processed, matches, ambiguous count, elapsed time).
   7 Testing
     – Expand tests to cover:
@@ -85,8 +85,7 @@ Areas for improvement & concrete suggestions
   8 Documentation
     – Move command-line examples into docs/usage.md and wire up mkdocs or sphinx for a browsable site.
     – Provide a benchmark section comparing execution time with and without rapidfuzz.
-  9 Internationalisation
-    – Mix of Italian/English is fine, but pick one language for identifiers and comments; keep docs bilingual if needed.
+
 
 Next steps If you’d like to apply any of these suggestions, let me know which direction you prefer. I will then tell you exactly which
 files are most likely to need edits so you can add them to the chat.
