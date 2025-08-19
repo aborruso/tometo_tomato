@@ -1,6 +1,6 @@
 # tometo_tomato
 
-**tometo_tomato** is a Python CLI tool for performing fuzzy joins between two CSV files, even in the presence of typos, abbreviations, or different formatting. It leverages DuckDB and the rapidfuzz extension to associate similar records across different sources.
+**tometo_tomato** è uno strumento CLI Python per eseguire join fuzzy tra due file CSV, anche in presenza di errori di battitura, abbreviazioni o formattazioni diverse. Utilizza DuckDB e l'estensione rapidfuzz per associare record simili tra diverse fonti.
 
 ## Caratteristiche
 - Join tra due file CSV basato sulla somiglianza testuale
@@ -9,31 +9,31 @@
 - Output separato per match puliti e ambigui
 - Log delle statistiche di esecuzione
 
-## Installation
+## Installazione
 
-### Prerequisites
-- Python 3.8 or higher
-- `pip` or `uv` (recommended)
+### Prerequisiti
+- Python 3.8 o superiore
+- `pip` o `uv` (consigliato)
 
-### Install from source
-1. Clone the repository:
+### Installazione dal codice sorgente
+1. Clona il repository:
    ```bash
    git clone https://github.com/aborruso/tometo_tomato.git
    cd tometo_tomato
    ```
-2. Install the package:
-   Using `uv` (recommended):
+2. Installa il pacchetto:
+   Usando `uv` (consigliato):
    ```bash
    uv pip install .
-   # Or, for an isolated CLI tool:
+   # Oppure, per uno strumento CLI isolato:
    uv tool install .
    ```
-   Using `pip`:
+   Usando `pip`:
    ```bash
    pip install .
    ```
 
-After installation, the `tometo_tomato` command will be available in your terminal.
+Dopo l'installazione, il comando `tometo_tomato` sarà disponibile nel tuo terminale.
 
 ## Utilizzo
 
@@ -62,13 +62,13 @@ tometo_tomato input.csv ref.csv \
   --output-clean output.csv
 ```
 
-### Handling Field Names with Spaces
+### Gestione dei nomi di campo con spazi
 
-If your column names in the CSV files contain spaces, you must enclose the arguments for `--join-pair` (`-j`) and `--add-field` (`-a`) in quotes. This ensures that the shell treats them as a single argument.
+Se i nomi delle colonne nei file CSV contengono spazi, devi racchiudere gli argomenti per `--join-pair` (`-j`) e `--add-field` (`-a`) tra virgolette. Questo garantisce che la shell li tratti come un singolo argomento.
 
-**Example:**
+**Esempio:**
 
-Suppose your files have columns named `"Input City"` and `"Reference City"`, and you want to add a field named `"Special Code"`.
+Supponiamo che i tuoi file abbiano colonne chiamate `"Input City"` e `"Reference City"`, e tu voglia aggiungere un campo chiamato `"Special Code"`.
 
 ```bash
 tometo_tomato "input data.csv" "reference data.csv" \
@@ -78,38 +78,38 @@ tometo_tomato "input data.csv" "reference data.csv" \
 ```
 
 ### Parametri principali
-- `input.csv` : CSV file to enrich/correct
-- `ref.csv`   : Reference CSV file
-- `--join-pair colA,colB` : Pair of columns to compare (repeatable)
+- `input.csv` : File CSV da arricchire/correggere
+- `ref.csv`   : File CSV di riferimento
+- `--join-pair colA,colB` : Coppia di colonne da confrontare (ripetibile)
 
-- `--add-field field`     : Field from the reference file to add to the output
-- `--threshold N`         : Minimum similarity threshold (default: 90)
-- `--show-score`          : Show average similarity score
-- `--output-clean`        : Output file for clean matches (mandatory)
-- `--output-ambiguous`    : Output file for ambiguous matches (optional)
-- `--scorer ALGO`         : Fuzzy matching algorithm (`ratio` or `token_set_ratio`). Default: `ratio`.
+- `--add-field field`     : Campo dal file di riferimento da aggiungere all'output
+- `--threshold N`         : Soglia minima di somiglianza (default: 90)
+- `--show-score`          : Mostra il punteggio medio di somiglianza
+- `--output-clean`        : File di output per i match puliti (obbligatorio)
+- `--output-ambiguous`    : File di output per i match ambigui (opzionale)
+- `--scorer ALGO`         : Algoritmo di matching fuzzy (`ratio` o `token_set_ratio`). Default: `ratio`.
 
-## Logic and Behavior
-- Fuzzy comparison is always case-insensitive (LOWER).
-- The join is a LEFT JOIN: all input file records are always present in the clean output.
-- The clean output file contains only the best match for each input row (if it exceeds the threshold).
-- You can add extra fields from the reference file using `--add-field`.
-- If you specify `--output-ambiguous`, an ambiguous records file is generated (for multiple matches with the same highest score).
-- If no ambiguous records are found, a message "No ambiguous records found." is displayed.
-- If ambiguous records are found, a warning message is displayed, indicating the file to check.
+## Logica e Comportamento
+- Il confronto fuzzy è sempre case-insensitive (LOWER).
+- Il join è un LEFT JOIN: tutti i record del file di input sono sempre presenti nell'output pulito.
+- Il file di output pulito contiene solo la migliore corrispondenza per ogni riga di input (se supera la soglia).
+- Puoi aggiungere campi extra dal file di riferimento usando `--add-field`.
+- Se specifichi `--output-ambiguous`, viene generato un file di record ambigui (per corrispondenze multiple con lo stesso punteggio più alto).
+- Se non vengono trovati record ambigui, viene visualizzato il messaggio "Nessun record ambiguo trovato.".
+- Se vengono trovati record ambigui, viene visualizzato un messaggio di avviso che indica il file da controllare.
 
 ## Output
-- A CSV file with clean matches (name and path always specified with `--output-clean`).
-- A CSV file with ambiguous matches (only if you specify `--output-ambiguous`).
+- Un file CSV con i match puliti (nome e percorso sempre specificati con `--output-clean`).
+- Un file CSV con i match ambigui (solo se specifichi `--output-ambiguous`).
 
 ## Esempio di caso d'uso
 Vedi il file [docs/PRD.md](docs/PRD.md) per una descrizione dettagliata e un esempio pratico.
 
-## Notes
-- The `--scorer token_set_ratio` is recommended for cases where names have different word counts (e.g., "Reggio Calabria" vs. "Reggio di Calabria").
-- If you don't specify `--join-pair`, all columns with the same name in both files will be used.
-- The tool is designed to be simple, robust, and easily integrable into data cleaning workflows.
+## Note
+- Il `--scorer token_set_ratio` è consigliato per i casi in cui i nomi hanno conteggi di parole diversi (ad esempio, "Reggio Calabria" vs. "Reggio di Calabria").
+- Se non specifichi `--join-pair`, verranno utilizzate tutte le colonne con lo stesso nome in entrambi i file.
+- Lo strumento è progettato per essere semplice, robusto e facilmente integrabile nei flussi di lavoro di pulizia dei dati.
 
 ---
 
-For questions, suggestions, or bugs, open an issue on GitHub!
+Per domande, suggerimenti o bug, apri un issue su GitHub!
