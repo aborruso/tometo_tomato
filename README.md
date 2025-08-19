@@ -77,6 +77,20 @@ tometo_tomato "input data.csv" "reference data.csv" \
   --output-clean "clean output.csv"
 ```
 
+### Cleaning Whitespace for Better Matching
+
+If your data contains inconsistent whitespace (multiple spaces, leading/trailing spaces), use `--clean-whitespace` to normalize spacing before fuzzy matching:
+
+```bash
+tometo_tomato input.csv ref.csv \
+  --join-pair city,city_name \
+  --clean-whitespace \
+  --threshold 90 \
+  --output-clean output.csv
+```
+
+This is especially useful when dealing with data that has formatting inconsistencies like `"Rome  City"` vs `" Rome City "`.
+
 ### Main parameters
 - `input.csv` : CSV file to enrich/correct
 - `ref.csv`   : Reference CSV file
@@ -88,6 +102,7 @@ tometo_tomato "input data.csv" "reference data.csv" \
 - `--output-clean`        : Output file for clean matches (mandatory)
 - `--output-ambiguous`    : Output file for ambiguous matches (optional)
 - `--scorer ALGO`         : Fuzzy matching algorithm (`ratio` or `token_set_ratio`). Default: `ratio`.
+- `--clean-whitespace`    : Remove redundant whitespace from columns before fuzzy matching
 
 ## Logic and Behavior
 - Fuzzy comparison is always case-insensitive (LOWER).
@@ -97,6 +112,7 @@ tometo_tomato "input data.csv" "reference data.csv" \
 - If you specify `--output-ambiguous`, an ambiguous records file is generated (for multiple matches with the same highest score).
 - If no ambiguous records are found, a message "No ambiguous records found." is displayed.
 - If ambiguous records are found, a warning message is displayed, indicating the file to check.
+- The `--clean-whitespace` option applies whitespace normalization to join columns before fuzzy matching, removing leading/trailing spaces and replacing multiple consecutive spaces with single spaces.
 
 ## Output
 - A CSV file with clean matches (name and path always specified with `--output-clean`).
@@ -108,6 +124,7 @@ See the file [docs/PRD.md](docs/PRD.md) for a detailed description and practical
 ## Notes
 - The `--scorer token_set_ratio` is recommended for cases where names have different word counts (e.g., "Reggio Calabria" vs. "Reggio di Calabria").
 - If you don't specify `--join-pair`, all columns with the same name in both files will be used.
+- Use `--clean-whitespace` when your data contains inconsistent spacing (e.g., "Rome  City" vs " Rome City ") to improve matching accuracy.
 - The tool is designed to be simple, robust, and easily integrable into data cleaning workflows.
 
 ---
