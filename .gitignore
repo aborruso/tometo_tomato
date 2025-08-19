@@ -7,3 +7,4 @@ src/tometo_tomato.egg-info/
 tmp.csv
 data/processed/
 data/interim/
+tests/__pycache__/
