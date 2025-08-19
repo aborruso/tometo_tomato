@@ -9,7 +9,11 @@ Usage example:
   python3 src/fuzzy_join.py input.csv ref.csv --threshold 85 --add-field codice_comune --show-score
 """
 import argparse
-import duckdb
+try:
+    import duckdb
+except Exception as e:
+    print("Error: duckdb Python package is required but not installed. Install via 'pip install duckdb'", file=sys.stderr)
+    raise
 import os
 import sys
 from typing import List
@@ -32,10 +36,21 @@ def parse_args():
 
 
 def read_header(path: str) -> List[str]:
-    with open(path, "r", encoding="utf-8") as f:
-        first = f.readline().strip()
-    # naive split on comma; keep compatibility with existing script which does same
-    return [c.strip().strip('"') for c in first.split(",")]
+    # Use DuckDB SQL engine as primary source of truth for header detection
+    con = duckdb.connect(database=":memory:")
+    safe_path = path.replace("'", "''")
+    q = f"SELECT * FROM read_csv_auto('{safe_path}', header=true, all_varchar=true) LIMIT 0"
+    res = con.execute(q)
+    desc = getattr(res, 'description', None)
+    if desc:
+        return [c[0] for c in desc]
+    # last attempt: fetch dataframe columns
+    try:
+        df = res.fetchdf()
+        return list(df.columns)
+    except Exception:
+        print("Error: DuckDB could not determine header columns for file: {}".format(path), file=sys.stderr)
+        raise
 
 
 def build_join_pairs(args) -> List[str]:
