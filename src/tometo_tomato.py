@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument("--join-pair", "-j", action="append", help="Pair in the form input_col,ref_col. Can be repeated.")
     parser.add_argument("--add-field", "-a", action="append", help="Fields from reference to add to output (space separated or repeated)")
     parser.add_argument("--show-score", "-s", action="store_true", help="Include avg_score in outputs")
+    parser.add_argument("--scorer", choices=['ratio', 'token_set_ratio'], default='ratio', help="Fuzzy matching algorithm to use.")
     return parser.parse_args()
 
 
@@ -113,22 +114,37 @@ def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
         return False
 
 
-def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str]) -> str:
+def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str) -> str:
     exprs = []
-    for pair in join_pairs:
-        inp, ref = pair.split(",")
-        inp = inp.replace('"', '').replace("'", "").strip()
-        ref = ref.replace('"', '').replace("'", "").strip()
-        if using_rapidfuzz:
-            exprs.append(f"rapidfuzz_ratio(LOWER(ref.\"{ref}\"), LOWER(inp.\"{inp}\"))")
-        else:
-            # fallback: use levenshtein normalized to 0-100 by similarity = (1 - dist/max_len)*100
-            # use greatest length between strings to normalize; in DuckDB SQL we'll compute it
+    
+    if using_rapidfuzz:
+        # Select the function name based on the scorer argument
+        if scorer == 'token_set_ratio':
+            score_func = 'rapidfuzz_token_set_ratio'
+        else: # default to 'ratio'
+            score_func = 'rapidfuzz_ratio'
+        
+        for pair in join_pairs:
+            inp, ref = pair.split(",")
+            inp = inp.replace('"', '').replace("'", '').strip()
+            ref = ref.replace('"', '').replace("'", '').strip()
+            exprs.append(f"{score_func}(LOWER(ref.\"{ref}\"), LOWER(inp.\"{inp}\"))")
+    else:
+        # Fallback logic without rapidfuzz
+        if scorer != 'ratio':
+            print(f"Error: The '{scorer}' scorer requires the rapidfuzz extension, which could not be loaded.", file=sys.stderr)
+            sys.exit(1)
+        
+        for pair in join_pairs:
+            inp, ref = pair.split(",")
+            inp = inp.replace('"', '').replace("'", '').strip()
+            ref = ref.replace('"', '').replace("'", '').strip()
             # we will build an expression that computes: (1 - levenshtein/NULLIF(GREATEST(LENGTH(a), LENGTH(b)),0)) * 100
             expr = (
                 "(1.0 - CAST(levenshtein(LOWER(ref.\"{ref}\"), LOWER(inp.\"{inp}\")) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER(ref.\"{ref}\")), LENGTH(LOWER(inp.\"{inp}\"))),0)) * 100"
             ).format(ref=ref, inp=inp)
             exprs.append(expr)
+            
     # average
     return " + ".join(exprs)
 
@@ -159,12 +175,12 @@ def main():
     con = duckdb.connect(database=":memory:")
     using_rapidfuzz = try_load_rapidfuzz(con)
     if using_rapidfuzz:
-        score_expr_base = choose_score_expr(True, join_pairs)
+        score_expr_base = choose_score_expr(True, join_pairs, args.scorer)
     else:
         # check for levenshtein/damerau availability by trying a trivial query
         try:
             con.execute("SELECT levenshtein('a','b')")
-            score_expr_base = choose_score_expr(False, join_pairs)
+            score_expr_base = choose_score_expr(False, join_pairs, args.scorer)
         except Exception:
             # try damerau_levenshtein
             try:

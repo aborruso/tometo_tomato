@@ -84,3 +84,62 @@ def test_add_field_with_spaces(tmp_path):
     rows = {lines[1].strip(), lines[2].strip()}
     assert "rome,Rome,ID-ROME-123" in rows
     assert "milan,Milan,ID-MILAN-456" in rows
+
+def test_scorer_option(tmp_path):
+    """Verify that the --scorer option works and token_set_ratio gives a higher score for specific cases."""
+    # Try to install rapidfuzz, skip if it fails (e.g., in CI without network)
+    try:
+        con = duckdb.connect()
+        con.execute("INSTALL rapidfuzz FROM community;")
+        con.close()
+    except Exception as e:
+        pytest.skip(f"Could not install rapidfuzz extension, skipping scorer test. Reason: {e}")
+
+    input_path = tmp_path / "input.csv"
+    ref_path = tmp_path / "ref.csv"
+    output_ratio_path = tmp_path / "output_ratio.csv"
+    output_token_set_path = tmp_path / "output_token_set.csv"
+
+    # Create test files
+    write_csv(input_path, "id,city", ["1,Reggio Calabria"])
+    write_csv(ref_path, "id_ref,city_ref", ["101,Reggio di Calabria"])
+
+    # --- Run with default scorer (ratio) ---
+    cmd_ratio = [
+        "python3", "src/tometo_tomato.py",
+        str(input_path), str(ref_path),
+        "-j", "city,city_ref",
+        "-s", # show score
+        "-o", str(output_ratio_path)
+    ]
+    result_ratio = subprocess.run(cmd_ratio, capture_output=True, text=True)
+    assert result_ratio.returncode == 0, f"Script failed with ratio scorer: {result_ratio.stderr}"
+
+    # --- Run with token_set_ratio scorer ---
+    cmd_token_set = [
+        "python3", "src/tometo_tomato.py",
+        str(input_path), str(ref_path),
+        "-j", "city,city_ref",
+        "-s", # show score
+        "--scorer", "token_set_ratio",
+        "-o", str(output_token_set_path)
+    ]
+    result_token_set = subprocess.run(cmd_token_set, capture_output=True, text=True)
+    assert result_token_set.returncode == 0, f"Script failed with token_set_ratio scorer: {result_token_set.stderr}"
+
+    # --- Compare scores ---
+    with open(output_ratio_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+        header_ratio = lines[0].strip().split(',')
+        data_ratio = lines[1].strip().split(',')
+        score_ratio = float(data_ratio[header_ratio.index('avg_score')])
+
+    with open(output_token_set_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+        header_token_set = lines[0].strip().split(',')
+        data_token_set = lines[1].strip().split(',')
+        score_token_set = float(data_token_set[header_token_set.index('avg_score')])
+
+    # Assert that token_set_ratio is better and ideally 100
+    assert score_token_set > score_ratio
+    assert score_token_set == 100.0
