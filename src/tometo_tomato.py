@@ -73,19 +73,31 @@ def build_join_pairs(args) -> List[str]:
 def prepare_select_clauses(join_pairs: List[str], add_fields: List[str], show_score: bool):
     # Extract unique input columns from join_pairs
     selected_input_cols = set()
+    selected_ref_cols = set()
     for pair in join_pairs:
         inp_col = pair.split(",")[0].strip().replace('"', '').replace("'", "")
+        ref_col = pair.split(",")[1].strip().replace('"', '').replace("'", "")
         selected_input_cols.add(inp_col)
+        selected_ref_cols.add(ref_col)
 
-    # Convert set to list to maintain order (optional, but good practice)
+    # Convert sets to lists to maintain order (optional, but good practice)
     selected_input_cols_list = sorted(list(selected_input_cols))
+    selected_ref_cols_list = sorted(list(selected_ref_cols))
 
     input_cols_select = ", ".join([f"inp.\"{c}\"" for c in selected_input_cols_list])
     input_cols_noprefix = ", ".join([f"\"{c}\"" for c in selected_input_cols_list])
+    
+    # Always include reference join fields with ref_ prefix
+    for ref_col in selected_ref_cols_list:
+        input_cols_select += f", bst.\"{ref_col}\" AS \"ref_{ref_col}\""
+        input_cols_noprefix += f", \"ref_{ref_col}\""
+    
+    # Add any additional fields specified with --add-field
     if add_fields:
         for f in add_fields:
             input_cols_select += f", bst.\"{f}\""
             input_cols_noprefix += f", \"{f}\""
+    
     if show_score:
         input_cols_select += ", bst.avg_score"
         input_cols_noprefix += ", avg_score"
