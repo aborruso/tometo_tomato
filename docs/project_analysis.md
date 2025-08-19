@@ -58,14 +58,6 @@ Strengths • Clear problem focus – fuzzy CSV joins – with a pragmatic tech-
 
 Areas for improvement & concrete suggestions
 
-  1 Packaging / distribution
-    – You currently ship both setup.py and a pyproject.toml. Pick one build-backend (PEP 517) to avoid duplication; today pyproject.toml +
-    setuptools or hatchling is the canonical choice.
-    – Add __version__ handling (e.g. with setuptools_scm) so tometo_tomato --version works.
-  2 CLI entry-point consistency
-    – src/tometo_tomato.py implements the logic, while src/root_command.sh + bashly.yml provide a Bashly-generated wrapper. Consider
-    eliminating the Bash wrapper and exposing the Python script directly via a console-script entry-point ([project.scripts] tometo_tomato
-    = tometo_tomato:main). This avoids drift between two CLIs and simplifies installation on Windows.
   3 Code organisation
     – Split the 400-line tometo_tomato.py into logical modules:
     • cli.py for argparse / typer
