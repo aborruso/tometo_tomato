@@ -151,10 +151,8 @@ def main():
     # prepare select clauses
     add_fields = []
     if args.add_field:
-        # allow repeated --add-field or space separated inside
-        for a in args.add_field:
-            for part in a.split():
-                add_fields.append(part.strip())
+        # The `action='append'` in argparse creates a list of all given fields.
+        add_fields = [a.strip() for a in args.add_field]
 
     select_clean_cols, select_ambiguous_cols, selected_input_cols_list = prepare_select_clauses(join_pairs, add_fields, args.show_score)
 
