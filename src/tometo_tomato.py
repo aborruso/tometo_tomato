@@ -9,13 +9,13 @@ Usage example:
   python3 src/fuzzy_join.py input.csv ref.csv --threshold 85 --add-field codice_comune --show-score
 """
 import argparse
+import sys
 try:
     import duckdb
 except Exception as e:
     print("Error: duckdb Python package is required but not installed. Install via 'pip install duckdb'", file=sys.stderr)
     raise
 import os
-import sys
 from typing import List
 
 
@@ -102,18 +102,18 @@ def prepare_select_clauses(join_pairs: List[str], add_fields: List[str], show_sc
 
     input_cols_select = ", ".join([f"inp.\"{c}\"" for c in selected_input_cols_list])
     input_cols_noprefix = ", ".join([f"\"{c}\"" for c in selected_input_cols_list])
-    
+
     # Always include reference join fields with ref_ prefix
     for ref_col in selected_ref_cols_list:
         input_cols_select += f", bst.\"{ref_col}\" AS \"ref_{ref_col}\""
         input_cols_noprefix += f", \"ref_{ref_col}\""
-    
+
     # Add any additional fields specified with --add-field
     if add_fields:
         for f in add_fields:
             input_cols_select += f", bst.\"{f}\""
             input_cols_noprefix += f", \"{f}\""
-    
+
     if show_score:
         input_cols_select += ", bst.avg_score"
         input_cols_noprefix += ", avg_score"
@@ -131,14 +131,14 @@ def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
 
 def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str) -> str:
     exprs = []
-    
+
     if using_rapidfuzz:
         # Select the function name based on the scorer argument
         if scorer == 'token_set_ratio':
             score_func = 'rapidfuzz_token_set_ratio'
         else: # default to 'ratio'
             score_func = 'rapidfuzz_ratio'
-        
+
         for pair in join_pairs:
             inp, ref = pair.split(",")
             inp = inp.replace('"', '').replace("'", '').strip()
@@ -149,7 +149,7 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str)
         if scorer != 'ratio':
             print(f"Error: The '{scorer}' scorer requires the rapidfuzz extension, which could not be loaded.", file=sys.stderr)
             sys.exit(1)
-        
+
         for pair in join_pairs:
             inp, ref = pair.split(",")
             inp = inp.replace('"', '').replace("'", '').strip()
@@ -159,7 +159,7 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str)
                 "(1.0 - CAST(levenshtein(LOWER(ref.\"{ref}\"), LOWER(inp.\"{inp}\")) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER(ref.\"{ref}\")), LENGTH(LOWER(inp.\"{inp}\"))),0)) * 100"
             ).format(ref=ref, inp=inp)
             exprs.append(expr)
-            
+
     # average
     return " + ".join(exprs)
 
@@ -177,7 +177,7 @@ def main():
         print("No join pair found. Exiting.")
         sys.exit(1)
 
-    
+
 
     # prepare select clauses
     add_fields = []
