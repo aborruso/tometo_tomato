@@ -1,5 +1,18 @@
 # LOG
 
+## 2025-08-19
+
+- Corretto un bug nella selezione delle colonne in `tometo_tomato.py` che causava la duplicazione delle colonne di input quando i nomi coincidevano con quelli del file di riferimento (issue #11).
+- Resolved Issue #7: Changed default output logic.
+- Resolved Issue #8: Verified handling of field names with spaces.
+- Resolved Issue #9: Implemented generation of ambiguous matches file only when explicitly requested.
+- Resolved Issue #10: Translated all stdout messages to English.
+- Migrated the fuzzy join script from bash to Python CLI.
+- Improved output logic for clean and ambiguous matches.
+- Configured package installation with `setup.py` and `pyproject.toml`.
+- Added test files for field names with spaces.
+- Updated `.gitignore` to exclude build artifacts and processed/interim data.
+
 ## 2025-08-18
 
 - Created the Python version of the fuzzy join script (`src/fuzzy_join.py`).
@@ -20,15 +33,3 @@
   - If no ambiguous records, the file is deleted and the shell notifies.
   - Updated README with current logic, parameters, and behavior.
   - Tested the CLI with various output and ambiguity scenarios.
-
-## 2025-08-19
-
-- Resolved Issue #7: Changed default output logic.
-- Resolved Issue #8: Verified handling of field names with spaces.
-- Resolved Issue #9: Implemented generation of ambiguous matches file only when explicitly requested.
-- Resolved Issue #10: Translated all stdout messages to English.
-- Migrated the fuzzy join script from bash to Python CLI.
-- Improved output logic for clean and ambiguous matches.
-- Configured package installation with `setup.py` and `pyproject.toml`.
-- Added test files for field names with spaces.
-- Updated `.gitignore` to exclude build artifacts and processed/interim data.

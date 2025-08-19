@@ -216,7 +216,7 @@ def main():
 
     con.execute(f"""
         CREATE TEMP VIEW all_scores AS
-        SELECT inp.input_id, {', '.join([f'inp."{c}"' for c in selected_input_cols_list])}, ref.*, {avg_score_expr} AS avg_score
+        SELECT inp.input_id, ref.*, {avg_score_expr} AS avg_score
         FROM read_csv_auto('{args.reference_file}', header=true, all_varchar=true) AS ref
         CROSS JOIN input_with_id AS inp;
     """)
