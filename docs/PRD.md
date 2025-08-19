@@ -67,7 +67,7 @@ Il processo produce un log di esecuzione con statistiche chiave: numero di recor
 
 - **Motore di elaborazione**: DuckDB
 - **Libreria di Fuzzy Matching**: Estensione `rapidfuzz` per DuckDB
-- **Orchestrazione**: Script Shell (CLI monocomando: `tometo_tomato`)
+- **Orchestrazione**: Script Python (CLI monocomando: `tometo_tomato`)
 
 ## Caso d'Uso Esemplificativo (Associazione Codici ISTAT)
 
@@ -102,13 +102,13 @@ Questo caso d'uso dimostra l'associazione di codici ISTAT a un'anagrafica non uf
   Il processo viene eseguito tramite il comando CLI monocomando `tometo_tomato`:
 
   ```bash
-  ./tometo_tomato input.csv ref.csv --join-pair regione,regio --join-pair comune,comu --add-field codice_comune --threshold 90 --show-score
+  tometo_tomato input.csv ref.csv --join-pair regione,regio --join-pair comune,comu --add-field codice_comune --threshold 90 --show-score
   ```
 
   Oppure, se le colonne da confrontare coincidono nei due file:
 
   ```bash
-  ./tometo_tomato input.csv ref.csv --add-field codice_comune --threshold 90 --show-score
+  tometo_tomato input.csv ref.csv --add-field codice_comune --threshold 90 --show-score
   ```
 
 - **Risultato Atteso**
