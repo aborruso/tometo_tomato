@@ -62,10 +62,26 @@ tometo_tomato input.csv ref.csv \
   --output-clean output.csv
 ```
 
+### Handling Field Names with Spaces
+
+If your column names in the CSV files contain spaces, you must enclose the arguments for `--join-pair` (`-j`) and `--add-field` (`-a`) in quotes. This ensures that the shell treats them as a single argument.
+
+**Example:**
+
+Suppose your files have columns named `"Input City"` and `"Reference City"`, and you want to add a field named `"Special Code"`.
+
+```bash
+tometo_tomato "input data.csv" "reference data.csv" \
+  --join-pair "Input City,Reference City" \
+  --add-field "Special Code" \
+  --output-clean "clean output.csv"
+```
+
 ### Parametri principali
 - `input.csv` : CSV file to enrich/correct
 - `ref.csv`   : Reference CSV file
 - `--join-pair colA,colB` : Pair of columns to compare (repeatable)
+
 - `--add-field field`     : Field from the reference file to add to the output
 - `--threshold N`         : Minimum similarity threshold (default: 90)
 - `--show-score`          : Show average similarity score
