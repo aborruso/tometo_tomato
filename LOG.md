@@ -11,13 +11,13 @@
 - Created `GEMINI.md` for project context.
 - Added the Product Requirements Document for fuzzy join.
 - Complete refactoring of the Bash script logic:
-	- Fuzzy comparison always case-insensitive (LOWER).
-	- LEFT JOIN: all input records are always present in the output.
-	- Clean and ambiguous output parameters managed as requested.
-	- Ambiguous output generated only if requested, with clear messages in shell.
-	- If no ambiguous records, the file is deleted and the shell notifies.
-	- Updated README with current logic, parameters, and behavior.
-	- Tested the CLI with various output and ambiguity scenarios.
+  - Fuzzy comparison always case-insensitive (LOWER).
+  - LEFT JOIN: all input records are always present in the output.
+  - Clean and ambiguous output parameters managed as requested.
+  - Ambiguous output generated only if requested, with clear messages in shell.
+  - If no ambiguous records, the file is deleted and the shell notifies.
+  - Updated README with current logic, parameters, and behavior.
+  - Tested the CLI with various output and ambiguity scenarios.
 
 ## 2025-08-19
 
