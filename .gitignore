@@ -1,3 +1,9 @@
 Zone.Identifier
 .aider*
 src/__pycache__/*
+build/
+data/processed/clean_matches.csv
+src/tometo_tomato.egg-info/
+tmp.csv
+data/processed/
+data/interim/
