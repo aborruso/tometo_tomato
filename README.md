@@ -1,56 +1,56 @@
 # tometo_tomato
 
-**tometo_tomato** è uno strumento CLI Python per eseguire join fuzzy tra due file CSV, anche in presenza di errori di battitura, abbreviazioni o formattazioni diverse. Utilizza DuckDB e l'estensione rapidfuzz per associare record simili tra diverse fonti.
+**tometo_tomato** is a Python CLI tool for performing fuzzy joins between two CSV files, even in the presence of typos, abbreviations, or different formatting. It leverages DuckDB and the rapidfuzz extension to associate similar records across different sources.
 
-## Caratteristiche
-- Join tra due file CSV basato sulla somiglianza testuale
-- Supporto multi-colonna (puoi specificare più coppie di colonne oppure usare automaticamente quelle con lo stesso nome)
-- Soglia di somiglianza configurabile
-- Output separato per match puliti e ambigui
-- Log delle statistiche di esecuzione
+## Features
+- Join between two CSV files based on textual similarity
+- Multi-column support (you can specify multiple column pairs or automatically use those with the same name)
+- Configurable similarity threshold
+- Separate output for clean and ambiguous matches
+- Execution statistics logging
 
-## Installazione
+## Installation
 
-### Prerequisiti
-- Python 3.8 o superiore
-- `pip` o `uv` (consigliato)
+### Prerequisites
+- Python 3.8 or higher
+- `pip` or `uv` (recommended)
 
-### Installazione dal codice sorgente
-1. Clona il repository:
+### Install from source
+1. Clone the repository:
    ```bash
    git clone https://github.com/aborruso/tometo_tomato.git
    cd tometo_tomato
    ```
-2. Installa il pacchetto:
-   Usando `uv` (consigliato):
+2. Install the package:
+   Using `uv` (recommended):
    ```bash
    uv pip install .
-   # Oppure, per uno strumento CLI isolato:
+   # Or, for an isolated CLI tool:
    uv tool install .
    ```
-   Usando `pip`:
+   Using `pip`:
    ```bash
    pip install .
    ```
 
-Dopo l'installazione, il comando `tometo_tomato` sarà disponibile nel tuo terminale.
+After installation, the `tometo_tomato` command will be available in your terminal.
 
-## Utilizzo
+## Usage
 
-### Esempio base
-Supponiamo di avere due file:
-- `input.csv` (anagrafica non ufficiale)
-- `ref.csv` (fonte ufficiale)
+### Basic example
+Suppose we have two files:
+- `input.csv` (unofficial registry)
+- `ref.csv` (official source)
 
 
-### Esempio base
-Se le colonne da confrontare hanno lo stesso nome nei due file:
+### Basic example
+If the columns to compare have the same name in both files:
 
 ```bash
 tometo_tomato input.csv ref.csv --add-field codice_comune --threshold 90 --show-score --output-clean output.csv
 ```
 
-Se le colonne hanno nomi diversi:
+If the columns have different names:
 
 ```bash
 tometo_tomato input.csv ref.csv \
@@ -62,13 +62,13 @@ tometo_tomato input.csv ref.csv \
   --output-clean output.csv
 ```
 
-### Gestione dei nomi di campo con spazi
+### Handling Field Names with Spaces
 
-Se i nomi delle colonne nei file CSV contengono spazi, devi racchiudere gli argomenti per `--join-pair` (`-j`) e `--add-field` (`-a`) tra virgolette. Questo garantisce che la shell li tratti come un singolo argomento.
+If your column names in the CSV files contain spaces, you must enclose the arguments for `--join-pair` (`-j`) and `--add-field` (`-a`) in quotes. This ensures that the shell treats them as a single argument.
 
-**Esempio:**
+**Example:**
 
-Supponiamo che i tuoi file abbiano colonne chiamate `"Input City"` e `"Reference City"`, e tu voglia aggiungere un campo chiamato `"Special Code"`.
+Suppose your files have columns named `"Input City"` and `"Reference City"`, and you want to add a field named `"Special Code"`.
 
 ```bash
 tometo_tomato "input data.csv" "reference data.csv" \
@@ -77,39 +77,39 @@ tometo_tomato "input data.csv" "reference data.csv" \
   --output-clean "clean output.csv"
 ```
 
-### Parametri principali
-- `input.csv` : File CSV da arricchire/correggere
-- `ref.csv`   : File CSV di riferimento
-- `--join-pair colA,colB` : Coppia di colonne da confrontare (ripetibile)
+### Main parameters
+- `input.csv` : CSV file to enrich/correct
+- `ref.csv`   : Reference CSV file
+- `--join-pair colA,colB` : Pair of columns to compare (repeatable)
 
-- `--add-field field`     : Campo dal file di riferimento da aggiungere all'output
-- `--threshold N`         : Soglia minima di somiglianza (default: 90)
-- `--show-score`          : Mostra il punteggio medio di somiglianza
-- `--output-clean`        : File di output per i match puliti (obbligatorio)
-- `--output-ambiguous`    : File di output per i match ambigui (opzionale)
-- `--scorer ALGO`         : Algoritmo di matching fuzzy (`ratio` o `token_set_ratio`). Default: `ratio`.
+- `--add-field field`     : Field from the reference file to add to the output
+- `--threshold N`         : Minimum similarity threshold (default: 90)
+- `--show-score`          : Show average similarity score
+- `--output-clean`        : Output file for clean matches (mandatory)
+- `--output-ambiguous`    : Output file for ambiguous matches (optional)
+- `--scorer ALGO`         : Fuzzy matching algorithm (`ratio` or `token_set_ratio`). Default: `ratio`.
 
-## Logica e Comportamento
-- Il confronto fuzzy è sempre case-insensitive (LOWER).
-- Il join è un LEFT JOIN: tutti i record del file di input sono sempre presenti nell'output pulito.
-- Il file di output pulito contiene solo la migliore corrispondenza per ogni riga di input (se supera la soglia).
-- Puoi aggiungere campi extra dal file di riferimento usando `--add-field`.
-- Se specifichi `--output-ambiguous`, viene generato un file di record ambigui (per corrispondenze multiple con lo stesso punteggio più alto).
-- Se non vengono trovati record ambigui, viene visualizzato il messaggio "Nessun record ambiguo trovato.".
-- Se vengono trovati record ambigui, viene visualizzato un messaggio di avviso che indica il file da controllare.
+## Logic and Behavior
+- Fuzzy comparison is always case-insensitive (LOWER).
+- The join is a LEFT JOIN: all input file records are always present in the clean output.
+- The clean output file contains only the best match for each input row (if it exceeds the threshold).
+- You can add extra fields from the reference file using `--add-field`.
+- If you specify `--output-ambiguous`, an ambiguous records file is generated (for multiple matches with the same highest score).
+- If no ambiguous records are found, a message "No ambiguous records found." is displayed.
+- If ambiguous records are found, a warning message is displayed, indicating the file to check.
 
 ## Output
-- Un file CSV con i match puliti (nome e percorso sempre specificati con `--output-clean`).
-- Un file CSV con i match ambigui (solo se specifichi `--output-ambiguous`).
+- A CSV file with clean matches (name and path always specified with `--output-clean`).
+- A CSV file with ambiguous matches (only if you specify `--output-ambiguous`).
 
-## Esempio di caso d'uso
-Vedi il file [docs/PRD.md](docs/PRD.md) per una descrizione dettagliata e un esempio pratico.
+## Use case example
+See the file [docs/PRD.md](docs/PRD.md) for a detailed description and practical example.
 
-## Note
-- Il `--scorer token_set_ratio` è consigliato per i casi in cui i nomi hanno conteggi di parole diversi (ad esempio, "Reggio Calabria" vs. "Reggio di Calabria").
-- Se non specifichi `--join-pair`, verranno utilizzate tutte le colonne con lo stesso nome in entrambi i file.
-- Lo strumento è progettato per essere semplice, robusto e facilmente integrabile nei flussi di lavoro di pulizia dei dati.
+## Notes
+- The `--scorer token_set_ratio` is recommended for cases where names have different word counts (e.g., "Reggio Calabria" vs. "Reggio di Calabria").
+- If you don't specify `--join-pair`, all columns with the same name in both files will be used.
+- The tool is designed to be simple, robust, and easily integrable into data cleaning workflows.
 
 ---
 
-Per domande, suggerimenti o bug, apri un issue su GitHub!
+For questions, suggestions, or bugs, open an issue on GitHub!
