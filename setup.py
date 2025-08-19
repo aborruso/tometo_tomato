@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='tometo_tomato',
     version='0.1.0',
-    packages=find_packages(where='src'),
+    py_modules=['tometo_tomato'],
     package_dir={'': 'src'},
     include_package_data=True,
     install_requires=[
@@ -12,7 +12,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'tometo_tomato=fuzzy_join:main',
+            'tometo_tomato=tometo_tomato:main',
         ],
     },
     author='Your Name', # TODO: Replace with actual author name

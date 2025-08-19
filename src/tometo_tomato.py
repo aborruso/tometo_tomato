@@ -16,7 +16,7 @@ from typing import List
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Fuzzy join using DuckDB")
+    parser = argparse.ArgumentParser(description="Fuzzy join utility using DuckDB")
     parser.add_argument("input_file")
     parser.add_argument("reference_file")
     parser.add_argument("--threshold", "-t", type=float, default=85.0)
@@ -41,9 +41,7 @@ def build_join_pairs(args) -> List[str]:
     if args.join_pair:
         pairs = []
         for p in args.join_pair:
-            # allow multiple space-separated pairs in same arg
-            for part in p.split():
-                pairs.append(part.strip())
+            pairs.append(p.strip())
         return pairs
     # otherwise infer common columns
     input_cols = read_header(args.input_file)
@@ -72,10 +70,18 @@ def build_join_pairs(args) -> List[str]:
     return pairs
 
 
-def prepare_select_clauses(input_cols: List[str], add_fields: List[str], show_score: bool):
-    # SELECT lists similar to shell script
-    input_cols_select = ", ".join([f"inp.\"{c}\"" for c in input_cols])
-    input_cols_noprefix = ", ".join([f"\"{c}\"" for c in input_cols])
+def prepare_select_clauses(join_pairs: List[str], add_fields: List[str], show_score: bool):
+    # Extract unique input columns from join_pairs
+    selected_input_cols = set()
+    for pair in join_pairs:
+        inp_col = pair.split(",")[0].strip().replace('"', '').replace("'", "")
+        selected_input_cols.add(inp_col)
+
+    # Convert set to list to maintain order (optional, but good practice)
+    selected_input_cols_list = sorted(list(selected_input_cols))
+
+    input_cols_select = ", ".join([f"inp.\"{c}\"" for c in selected_input_cols_list])
+    input_cols_noprefix = ", ".join([f"\"{c}\"" for c in selected_input_cols_list])
     if add_fields:
         for f in add_fields:
             input_cols_select += f", bst.\"{f}\""
@@ -83,7 +89,7 @@ def prepare_select_clauses(input_cols: List[str], add_fields: List[str], show_sc
     if show_score:
         input_cols_select += ", bst.avg_score"
         input_cols_noprefix += ", avg_score"
-    return input_cols_select, input_cols_noprefix
+    return input_cols_select, input_cols_noprefix, selected_input_cols_list
 
 
 def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
@@ -116,6 +122,10 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str]) -> str:
 
 
 def main():
+    if '--help' in sys.argv or '-h' in sys.argv:
+        print("\nExample:")
+        print("  tometo_tomato input.csv ref.csv -j \"col1,col_ref1\" -j \"col2,col_ref2\" -a \"field_to_add1\" -a \"field_to_add2\" -o \"output_clean.csv\"")
+        print("") # Add an empty line for better formatting
     args = parse_args()
 
     # Build join pairs
@@ -124,9 +134,7 @@ def main():
         print("Nessuna join pair trovata. Esco.")
         sys.exit(1)
 
-    # read input header cols
-    input_header = read_header(args.input_file)
-    input_cols = input_header
+    
 
     # prepare select clauses
     add_fields = []
@@ -136,7 +144,7 @@ def main():
             for part in a.split():
                 add_fields.append(part.strip())
 
-    select_clean_cols, select_ambiguous_cols = prepare_select_clauses(input_cols, add_fields, args.show_score)
+    select_clean_cols, select_ambiguous_cols, selected_input_cols_list = prepare_select_clauses(join_pairs, add_fields, args.show_score)
 
     con = duckdb.connect(database=":memory:")
     using_rapidfuzz = try_load_rapidfuzz(con)
@@ -155,8 +163,8 @@ def main():
                 exprs = []
                 for pair in join_pairs:
                     inp, ref = pair.split(",")
-                    inp = inp.replace('"', '').replace("'", "").strip()
-                    ref = ref.replace('"', '').replace("'", "").strip()
+                    inp = inp.replace('"', '').replace("'", '').strip()
+                    ref = ref.replace('"', '').replace("'", '').strip()
                     expr = (
                         "(1.0 - CAST(damerau_levenshtein(LOWER(ref.\"{ref}\"), LOWER(inp.\"{inp}\")) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER(ref.\"{ref}\")), LENGTH(LOWER(inp.\"{inp}\"))),0)) * 100"
                     ).format(ref=ref, inp=inp)
@@ -171,22 +179,39 @@ def main():
     avg_score_expr = f"({score_expr_base}) / {num_pairs}"
 
     # Create temporary views for common CTEs
+    # Extract unique input columns from join_pairs for SQL selection
+    input_join_cols_for_sql = set()
+    for pair in join_pairs:
+        inp_col = pair.split(",")[0].strip().replace('"', '').replace("'", "")
+        input_join_cols_for_sql.add(f'"{inp_col}"')
+    input_join_cols_for_sql_list = sorted(list(input_join_cols_for_sql))
+    input_cols_for_cte = ", ".join(input_join_cols_for_sql_list)
+
+    # Build WHERE clause to filter out empty rows based on join columns
+    where_clause_parts = []
+    for col in input_join_cols_for_sql_list:
+        where_clause_parts.append(f"{col} IS NOT NULL AND {col} != ''")
+    where_clause = " AND ".join(where_clause_parts)
+    if where_clause:
+        where_clause = f"WHERE {where_clause}"
+
     con.execute(f"""
         CREATE TEMP VIEW input_with_id AS
-        SELECT ROW_NUMBER() OVER () AS input_id, *
-        FROM read_csv_auto('{args.input_file}', header=true, all_varchar=true);
+        SELECT ROW_NUMBER() OVER () AS input_id, {input_cols_for_cte}
+        FROM read_csv_auto('{args.input_file}', header=true, all_varchar=true)
+        {where_clause};
     """)
 
     con.execute(f"""
         CREATE TEMP VIEW all_scores AS
-        SELECT inp.input_id, inp.*, ref.*, {avg_score_expr} AS avg_score
+        SELECT inp.input_id, {', '.join([f'inp."{c}"' for c in selected_input_cols_list])}, ref.*, {avg_score_expr} AS avg_score
         FROM read_csv_auto('{args.reference_file}', header=true, all_varchar=true) AS ref
         CROSS JOIN input_with_id AS inp;
     """)
 
     con.execute(f"""
         CREATE TEMP VIEW best_matches AS
-        SELECT *, RANK() OVER(PARTITION BY input_id ORDER BY avg_score DESC) as rnk
+        SELECT *, ROW_NUMBER() OVER(PARTITION BY input_id ORDER BY avg_score DESC, input_id ASC) as rnk
         FROM all_scores
         WHERE avg_score >= {args.threshold};
     """)
@@ -194,7 +219,7 @@ def main():
     # Build DuckDB SQL for clean output
     sql_clean = f"""
 COPY (
-    SELECT {select_clean_cols}
+    SELECT DISTINCT {select_clean_cols}
     FROM input_with_id inp
     LEFT JOIN (SELECT * FROM best_matches WHERE rnk = 1) bst ON inp.input_id = bst.input_id
 ) TO '{args.output_clean}' (HEADER, DELIMITER ',');
@@ -208,7 +233,7 @@ COPY (
     WITH ambiguous_inputs AS (
         SELECT input_id FROM best_matches WHERE rnk = 1 GROUP BY input_id HAVING COUNT(*) > 1
     )
-    SELECT {select_ambiguous_cols}
+    SELECT DISTINCT {select_ambiguous_cols}
     FROM all_scores s
     WHERE s.input_id IN (SELECT input_id FROM ambiguous_inputs)
 ) TO '{args.output_ambiguous}' (HEADER, DELIMITER ',');
