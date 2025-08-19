@@ -143,3 +143,62 @@ def test_scorer_option(tmp_path):
     # Assert that token_set_ratio is better and ideally 100
     assert score_token_set > score_ratio
     assert score_token_set == 100.0
+
+
+def test_clean_whitespace_option(tmp_path):
+    """Verify that the --clean-whitespace option removes redundant whitespace before matching."""
+    input_path = tmp_path / "input.csv"
+    ref_path = tmp_path / "ref.csv"
+    output_path = tmp_path / "output.csv"
+    output_no_clean_path = tmp_path / "output_no_clean.csv"
+
+    # Create test files with redundant whitespace
+    with open(input_path, "w", encoding="utf-8") as f:
+        f.write("city\n")
+        f.write("Rome   City\n")  # Multiple spaces
+
+    with open(ref_path, "w", encoding="utf-8") as f:
+        f.write("city\n")
+        f.write("  Rome City  \n")  # Leading/trailing and internal spaces
+
+    # Run without --clean-whitespace
+    cmd_no_clean = [
+        "python3", "src/tometo_tomato.py",
+        str(input_path), str(ref_path),
+        "-j", "city,city",
+        "-o", str(output_no_clean_path),
+        "-s", "-t", "50"  # Lower threshold to see the difference
+    ]
+    
+    result_no_clean = subprocess.run(cmd_no_clean, capture_output=True, text=True)
+    assert result_no_clean.returncode == 0, f"Script failed with error: {result_no_clean.stderr}"
+
+    # Run with --clean-whitespace
+    cmd_clean = [
+        "python3", "src/tometo_tomato.py",
+        str(input_path), str(ref_path),
+        "-j", "city,city",
+        "-o", str(output_path),
+        "--clean-whitespace",
+        "-s", "-t", "50"  # Lower threshold to see the difference
+    ]
+    
+    result_clean = subprocess.run(cmd_clean, capture_output=True, text=True)
+    assert result_clean.returncode == 0, f"Script failed with error: {result_clean.stderr}"
+
+    # Check both output files
+    def extract_score(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        if len(lines) < 2:
+            return 0.0  # No match found
+        data_row = lines[1].strip()
+        return float(data_row.split(",")[-1])
+
+    score_no_clean = extract_score(output_no_clean_path)
+    score_clean = extract_score(output_path)
+    
+    # With whitespace cleaning, the score should be higher (closer to 100)
+    # because "Rome   City" vs "  Rome City  " becomes "Rome City" vs "Rome City"
+    assert score_clean > score_no_clean, f"Clean whitespace should improve score: {score_clean} > {score_no_clean}"
+    assert score_clean > 90.0, f"After cleaning, score should be very high: {score_clean}"

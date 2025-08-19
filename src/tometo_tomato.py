@@ -48,6 +48,7 @@ def parse_args():
     parser.add_argument("--add-field", "-a", action="append", help="Fields from reference to add to output (space separated or repeated)")
     parser.add_argument("--show-score", "-s", action="store_true", help="Include avg_score in outputs")
     parser.add_argument("--scorer", choices=['ratio', 'token_set_ratio'], default='ratio', help="Fuzzy matching algorithm to use.")
+    parser.add_argument("--clean-whitespace", action="store_true", help="Remove redundant whitespace from columns before fuzzy matching")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Increase verbosity (e.g., -v, -vv)")
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress all output except errors")
     return parser.parse_args()
@@ -147,7 +148,15 @@ def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
         return False
 
 
-def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str) -> str:
+def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str, clean_whitespace: bool = False) -> str:
+    def clean_column_expr(table_alias: str, column: str) -> str:
+        """Generate column expression with optional whitespace cleaning."""
+        base_expr = f'{table_alias}."{column}"'
+        if clean_whitespace:
+            # Apply trim(regexp_replace(column, ' {2,}', ' ', 'g')) to remove redundant whitespace
+            return f"trim(regexp_replace({base_expr}, ' {{2,}}', ' ', 'g'))"
+        return base_expr
+    
     exprs = []
 
     if using_rapidfuzz:
@@ -161,7 +170,11 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str)
             inp, ref = pair.split(",")
             inp = inp.replace('"', '').replace("'", '').strip()
             ref = ref.replace('"', '').replace("'", '').strip()
-            exprs.append(f"{score_func}(LOWER(ref.\"{ref}\"), LOWER(inp.\"{inp}\"))")
+            
+            inp_expr = clean_column_expr("inp", inp)
+            ref_expr = clean_column_expr("ref", ref)
+            
+            exprs.append(f"{score_func}(LOWER({ref_expr}), LOWER({inp_expr}))")
     else:
         # Fallback logic without rapidfuzz
         if scorer != 'ratio':
@@ -172,10 +185,14 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str)
             inp, ref = pair.split(",")
             inp = inp.replace('"', '').replace("'", '').strip()
             ref = ref.replace('"', '').replace("'", '').strip()
+            
+            inp_expr = clean_column_expr("inp", inp)
+            ref_expr = clean_column_expr("ref", ref)
+            
             # we will build an expression that computes: (1 - levenshtein/NULLIF(GREATEST(LENGTH(a), LENGTH(b)),0)) * 100
             expr = (
-                "(1.0 - CAST(levenshtein(LOWER(ref.\"{ref}\"), LOWER(inp.\"{inp}\")) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER(ref.\"{ref}\")), LENGTH(LOWER(inp.\"{inp}\"))),0)) * 100"
-            ).format(ref=ref, inp=inp)
+                "(1.0 - CAST(levenshtein(LOWER({ref_expr}), LOWER({inp_expr})) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER({ref_expr})), LENGTH(LOWER({inp_expr}))),0)) * 100"
+            ).format(ref_expr=ref_expr, inp_expr=inp_expr)
             exprs.append(expr)
 
     # average
@@ -220,25 +237,37 @@ def main():
     con = duckdb.connect(database=":memory:")
     using_rapidfuzz = try_load_rapidfuzz(con)
     if using_rapidfuzz:
-        score_expr_base = choose_score_expr(True, join_pairs, args.scorer)
+        score_expr_base = choose_score_expr(True, join_pairs, args.scorer, args.clean_whitespace)
     else:
         # check for levenshtein/damerau availability by trying a trivial query
         try:
             con.execute("SELECT levenshtein('a','b')")
-            score_expr_base = choose_score_expr(False, join_pairs, args.scorer)
+            score_expr_base = choose_score_expr(False, join_pairs, args.scorer, args.clean_whitespace)
         except Exception:
             # try damerau_levenshtein
             try:
                 con.execute("SELECT damerau_levenshtein('a','b')")
                 # replace levenshtein with damerau_levenshtein in expressions
                 exprs = []
+                def clean_column_expr_damerau(table_alias: str, column: str) -> str:
+                    """Generate column expression with optional whitespace cleaning for damerau fallback."""
+                    base_expr = f'{table_alias}."{column}"'
+                    if args.clean_whitespace:
+                        # Apply trim(regexp_replace(column, ' {2,}', ' ', 'g')) to remove redundant whitespace
+                        return f"trim(regexp_replace({base_expr}, ' {{2,}}', ' ', 'g'))"
+                    return base_expr
+                
                 for pair in join_pairs:
                     inp, ref = pair.split(",")
                     inp = inp.replace('"', '').replace("'", '').strip()
                     ref = ref.replace('"', '').replace("'", '').strip()
+                    
+                    inp_expr = clean_column_expr_damerau("inp", inp)
+                    ref_expr = clean_column_expr_damerau("ref", ref)
+                    
                     expr = (
-                        "(1.0 - CAST(damerau_levenshtein(LOWER(ref.\"{ref}\"), LOWER(inp.\"{inp}\")) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER(ref.\"{ref}\")), LENGTH(LOWER(inp.\"{inp}\"))),0)) * 100"
-                    ).format(ref=ref, inp=inp)
+                        "(1.0 - CAST(damerau_levenshtein(LOWER({ref_expr}), LOWER({inp_expr})) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER({ref_expr})), LENGTH(LOWER({inp_expr}))),0)) * 100"
+                    ).format(ref_expr=ref_expr, inp_expr=inp_expr)
                     exprs.append(expr)
                 score_expr_base = " + ".join(exprs)
             except Exception:
