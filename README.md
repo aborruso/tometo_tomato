@@ -2,12 +2,12 @@
 
 **tometo_tomato** is a Python CLI tool for performing fuzzy joins between two CSV files, even in the presence of typos, abbreviations, or different formatting. It leverages DuckDB and the rapidfuzz extension to associate similar records across different sources.
 
-## Caratteristiche
-- Join tra due file CSV basato sulla somiglianza testuale
-- Supporto multi-colonna (puoi specificare più coppie di colonne oppure usare automaticamente quelle con lo stesso nome)
-- Soglia di somiglianza configurabile
-- Output separato per match puliti e ambigui
-- Log delle statistiche di esecuzione
+## Features
+- Join between two CSV files based on textual similarity
+- Multi-column support (you can specify multiple column pairs or automatically use those with the same name)
+- Configurable similarity threshold
+- Separate output for clean and ambiguous matches
+- Execution statistics logging
 
 ## Installation
 
@@ -35,22 +35,22 @@
 
 After installation, the `tometo_tomato` command will be available in your terminal.
 
-## Utilizzo
+## Usage
 
-### Esempio base
-Supponiamo di avere due file:
-- `input.csv` (anagrafica non ufficiale)
-- `ref.csv` (fonte ufficiale)
+### Basic example
+Suppose we have two files:
+- `input.csv` (unofficial registry)
+- `ref.csv` (official source)
 
 
-### Esempio base
-Se le colonne da confrontare hanno lo stesso nome nei due file:
+### Basic example
+If the columns to compare have the same name in both files:
 
 ```bash
 tometo_tomato input.csv ref.csv --add-field codice_comune --threshold 90 --show-score --output-clean output.csv
 ```
 
-Se le colonne hanno nomi diversi:
+If the columns have different names:
 
 ```bash
 tometo_tomato input.csv ref.csv \
@@ -77,7 +77,7 @@ tometo_tomato "input data.csv" "reference data.csv" \
   --output-clean "clean output.csv"
 ```
 
-### Parametri principali
+### Main parameters
 - `input.csv` : CSV file to enrich/correct
 - `ref.csv`   : Reference CSV file
 - `--join-pair colA,colB` : Pair of columns to compare (repeatable)
@@ -102,8 +102,8 @@ tometo_tomato "input data.csv" "reference data.csv" \
 - A CSV file with clean matches (name and path always specified with `--output-clean`).
 - A CSV file with ambiguous matches (only if you specify `--output-ambiguous`).
 
-## Esempio di caso d'uso
-Vedi il file [docs/PRD.md](docs/PRD.md) per una descrizione dettagliata e un esempio pratico.
+## Use case example
+See the file [docs/PRD.md](docs/PRD.md) for a detailed description and practical example.
 
 ## Notes
 - The `--scorer token_set_ratio` is recommended for cases where names have different word counts (e.g., "Reggio Calabria" vs. "Reggio di Calabria").
