@@ -18,3 +18,15 @@
 	- Se non ci sono record ambigui, il file viene cancellato e la shell avvisa.
 	- Aggiornato README con la logica attuale, parametri e comportamento.
 	- Testata la CLI con vari scenari di output e ambiguità.
+
+## 2025-08-19
+
+- Resolved Issue #7: Changed default output logic.
+- Resolved Issue #8: Verified handling of field names with spaces.
+- Resolved Issue #9: Implemented generation of ambiguous matches file only when explicitly requested.
+- Resolved Issue #10: Translated all stdout messages to English.
+- Migrated the fuzzy join script from bash to Python CLI.
+- Improved output logic for clean and ambiguous matches.
+- Configured package installation with `setup.py` and `pyproject.toml`.
+- Added test files for field names with spaces.
+- Updated `.gitignore` to exclude build artifacts and processed/interim data.
