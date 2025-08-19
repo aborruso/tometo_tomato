@@ -1,3 +1,5 @@
+# LOG
+
 ## 2025-08-18
 
 - Created the Python version of the fuzzy join script (`src/fuzzy_join.py`).
