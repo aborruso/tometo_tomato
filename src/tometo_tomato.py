@@ -21,10 +21,11 @@ except ImportError:
 
 
 import argparse
+import logging
 try:
     import duckdb
 except Exception as e:
-    print("Error: duckdb Python package is required but not installed. Install via 'pip install duckdb'", file=sys.stderr)
+    logging.error("Error: duckdb Python package is required but not installed. Install via 'pip install duckdb'")
     raise
 from typing import List
 
@@ -47,6 +48,8 @@ def parse_args():
     parser.add_argument("--add-field", "-a", action="append", help="Fields from reference to add to output (space separated or repeated)")
     parser.add_argument("--show-score", "-s", action="store_true", help="Include avg_score in outputs")
     parser.add_argument("--scorer", choices=['ratio', 'token_set_ratio'], default='ratio', help="Fuzzy matching algorithm to use.")
+    parser.add_argument("--verbose", "-v", action="count", default=0, help="Increase verbosity (e.g., -v, -vv)")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Suppress all output except errors")
     return parser.parse_args()
 
 
@@ -64,7 +67,7 @@ def read_header(path: str) -> List[str]:
         df = res.fetchdf()
         return list(df.columns)
     except Exception:
-        print("Error: DuckDB could not determine header columns for file: {}".format(path), file=sys.stderr)
+        logging.error("DuckDB could not determine header columns for file: {}".format(path))
         raise
 
 
@@ -162,7 +165,7 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str)
     else:
         # Fallback logic without rapidfuzz
         if scorer != 'ratio':
-            print(f"Error: The '{scorer}' scorer requires the rapidfuzz extension, which could not be loaded.", file=sys.stderr)
+            logging.error(f"The '{scorer}' scorer requires the rapidfuzz extension, which could not be loaded.")
             sys.exit(1)
 
         for pair in join_pairs:
@@ -180,16 +183,28 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str)
 
 
 def main():
-    if '--help' in sys.argv or '-h' in sys.argv:
-        print("\nExample:")
-        print("  tometo_tomato input.csv ref.csv -j \"col1,col_ref1\" -j \"col2,col_ref2\" -a \"field_to_add1\" -a \"field_to_add2\" -o \"output_clean.csv\"")
-        print("") # Add an empty line for better formatting
     args = parse_args()
+
+    # Configure logging
+    if args.quiet:
+        logging.basicConfig(level=logging.CRITICAL, format='%(levelname)s: %(message)s')
+    elif args.verbose == 1:
+        logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    elif args.verbose >= 2:
+        logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+    else:
+        logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+
+    if '--help' in sys.argv or '-h' in sys.argv:
+        logging.info("\nExample:")
+        logging.info("  tometo_tomato input.csv ref.csv -j \"col1,col_ref1\" -j \"col2,col_ref2\" -a \"field_to_add1\" -a \"field_to_add2\" -o \"output_clean.csv\"")
+        logging.info("") # Add an empty line for better formatting
+    
 
     # Build join pairs
     join_pairs = build_join_pairs(args)
     if not join_pairs:
-        print("No join pair found. Exiting.")
+        logging.error("No join pair found. Exiting.")
         sys.exit(1)
 
 
@@ -227,7 +242,7 @@ def main():
                     exprs.append(expr)
                 score_expr_base = " + ".join(exprs)
             except Exception:
-                print("No fuzzy function available in DuckDB (rapidfuzz, levenshtein or damerau_levenshtein). Install the rapidfuzz extension or use a DuckDB version that includes levenshtein.")
+                logging.error("No fuzzy function available in DuckDB (rapidfuzz, levenshtein or damerau_levenshtein). Install the rapidfuzz extension or use a DuckDB version that includes levenshtein.")
                 sys.exit(1)
 
     # avg_score = (score_expr_base) / num_pairs
@@ -304,16 +319,15 @@ COPY (
             with open(args.output_ambiguous, "r", encoding="utf-8") as f:
                 lines = f.readlines()
             if len(lines) <= 1:
-                os.remove(args.output_ambiguous)
-                print("ℹ️ No ambiguous records found.")
+                logging.info("No ambiguous records found.")
             else:
                 ambiguous_file_saved = True
-                print(f"⚠️ Ambiguous records found! Check file: {args.output_ambiguous}")
+                logging.warning(f"Ambiguous records found! Check file: {args.output_ambiguous}")
 
-    print("✅ Fuzzy join complete.")
-    print(f"- Clean matches saved to: {args.output_clean}")
+    logging.info("Fuzzy join complete.")
+    logging.info(f"- Clean matches saved to: {args.output_clean}")
     if args.output_ambiguous and ambiguous_file_saved:
-        print(f"- Ambiguous matches saved to: {args.output_ambiguous}")
+        logging.info(f"- Ambiguous matches saved to: {args.output_ambiguous}")
 
 
 if __name__ == '__main__':
