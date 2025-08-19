@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument("--infer-pairs", "-i", action="store_true", help="Infer join pairs from similar column names")
     parser.add_argument("--infer-threshold", "-I", type=float, default=0.7, help="Threshold (0-1) for header name similarity when inferring pairs")
     parser.add_argument("--output-clean", "-o", default="clean_matches.csv")
-    parser.add_argument("--output-ambiguous", "-u", default="ambiguous_matches.csv")
+    parser.add_argument("--output-ambiguous", "-u", default=None)
     parser.add_argument("--join-pair", "-j", action="append", help="Pair in the form input_col,ref_col. Can be repeated.")
     parser.add_argument("--add-field", "-a", action="append", help="Fields from reference to add to output (space separated or repeated)")
     parser.add_argument("--show-score", "-s", action="store_true", help="Include avg_score in outputs")
@@ -131,7 +131,7 @@ def main():
     # Build join pairs
     join_pairs = build_join_pairs(args)
     if not join_pairs:
-        print("Nessuna join pair trovata. Esco.")
+        print("No join pair found. Exiting.")
         sys.exit(1)
 
     
@@ -171,7 +171,7 @@ def main():
                     exprs.append(expr)
                 score_expr_base = " + ".join(exprs)
             except Exception:
-                print("Nessuna funzione di fuzzy disponibile in DuckDB (rapidfuzz, levenshtein o damerau_levenshtein). Installare l'estensione rapidfuzz o usare una versione di DuckDB che include levenshtein.")
+                print("No fuzzy function available in DuckDB (rapidfuzz, levenshtein or damerau_levenshtein). Install the rapidfuzz extension or use a DuckDB version that includes levenshtein.")
                 sys.exit(1)
 
     # avg_score = (score_expr_base) / num_pairs
@@ -227,8 +227,9 @@ COPY (
 
     con.execute(sql_clean)
 
-    # Build DuckDB SQL for ambiguous output
-    sql_amb = f"""
+    if args.output_ambiguous:
+        # Build DuckDB SQL for ambiguous output
+        sql_amb = f"""
 COPY (
     WITH ambiguous_inputs AS (
         SELECT input_id FROM best_matches WHERE rnk = 1 GROUP BY input_id HAVING COUNT(*) > 1
@@ -239,21 +240,24 @@ COPY (
 ) TO '{args.output_ambiguous}' (HEADER, DELIMITER ',');
 """
 
-    con.execute(sql_amb)
+        con.execute(sql_amb)
 
-    # post-process ambiguous file: delete if only header
-    if os.path.exists(args.output_ambiguous):
-        with open(args.output_ambiguous, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        if len(lines) <= 1:
-            os.remove(args.output_ambiguous)
-            print(f"ℹ️ Nessun record ambiguo trovato. Il file {args.output_ambiguous} è stato cancellato.")
-        else:
-            print(f"⚠️ Sono stati trovati record ambigui! Controlla il file: {args.output_ambiguous}")
+        ambiguous_file_saved = False
+        # post-process ambiguous file: delete if only header
+        if os.path.exists(args.output_ambiguous):
+            with open(args.output_ambiguous, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            if len(lines) <= 1:
+                os.remove(args.output_ambiguous)
+                print("ℹ️ No ambiguous records found.")
+            else:
+                ambiguous_file_saved = True
+                print(f"⚠️ Ambiguous records found! Check file: {args.output_ambiguous}")
 
     print("✅ Fuzzy join complete.")
     print(f"- Clean matches saved to: {args.output_clean}")
-    print(f"- Ambiguous matches saved to: {args.output_ambiguous}")
+    if args.output_ambiguous and ambiguous_file_saved:
+        print(f"- Ambiguous matches saved to: {args.output_ambiguous}")
 
 
 if __name__ == '__main__':
