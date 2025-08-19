@@ -11,7 +11,7 @@ The process is defined in detail in the [Product Requirements Document](docs/PRD
 *   **Fuzzy Matching:** The `rapidfuzz` community extension for DuckDB.
 
 **Architecture:**
-The project is centered around SQL scripts and the `duckdb` command-line tool.
+The project is centered around a Python script (`tometo_tomato.py`) that orchestrates data processing using the `duckdb` engine.
 *   `data/`: Contains the data, subdivided into:
     *   `raw/`: Original, immutable source data.
     *   `interim/`: Intermediate, transformed data.
@@ -21,7 +21,7 @@ The project is centered around SQL scripts and the `duckdb` command-line tool.
 
 ## Building and Running
 
-The core of this project is direct execution of SQL queries via the `duckdb` CLI. An orchestration script (e.g., `scripts/run_join.sh`) will likely be created to manage the workflow.
+The core of this project is the `tometo_tomato` Python CLI tool, which orchestrates data processing by executing SQL queries via the `duckdb` engine.
 
 A typical workflow within a script would involve:
 1.  Installing and loading the `rapidfuzz` extension.
@@ -62,7 +62,7 @@ COPY (
 ## Development Conventions
 
 *   **Data Flow:** Data should flow from `data/raw` through `data/interim` to `data/processed`. The `raw` directory is read-only.
-*   **Core Logic:** The main logic should be implemented in SQL files (`.sql`) to be executed by DuckDB.
-*   **Orchestrazione:** Shell scripts (`.sh`) should be used to chain commands, set parameters (like file paths or thresholds), and manage the overall execution flow.
+*   **Core Logic:** The main logic is implemented in the `tometo_tomato.py` Python script, which utilizes DuckDB for data processing.
+*   **Orchestration:** The `tometo_tomato` Python CLI tool handles the overall execution flow, chaining commands and managing parameters.
 *   **Documentation:** All significant project decisions, goals, and requirements are documented in `docs/PRD.md`.
 *   **Logging:** Project progress and key events should be tracked in `LOG.md`.
