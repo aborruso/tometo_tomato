@@ -87,6 +87,7 @@ tometo_tomato "input data.csv" "reference data.csv" \
 - `--show-score`          : Show average similarity score
 - `--output-clean`        : Output file for clean matches (mandatory)
 - `--output-ambiguous`    : Output file for ambiguous matches (optional)
+- `--scorer ALGO`         : Fuzzy matching algorithm (`ratio` or `token_set_ratio`). Default: `ratio`.
 
 ## Logic and Behavior
 - Fuzzy comparison is always case-insensitive (LOWER).
@@ -105,6 +106,7 @@ tometo_tomato "input data.csv" "reference data.csv" \
 Vedi il file [docs/PRD.md](docs/PRD.md) per una descrizione dettagliata e un esempio pratico.
 
 ## Notes
+- The `--scorer token_set_ratio` is recommended for cases where names have different word counts (e.g., "Reggio Calabria" vs. "Reggio di Calabria").
 - If you don't specify `--join-pair`, all columns with the same name in both files will be used.
 - The tool is designed to be simple, robust, and easily integrable into data cleaning workflows.
 

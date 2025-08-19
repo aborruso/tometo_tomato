@@ -2,6 +2,7 @@
 
 ## 2025-08-19
 
+- Aggiunto il parametro `--scorer` per selezionare l'algoritmo di matching (`ratio` o `token_set_ratio`).
 - Aggiornato README.md con esempi per nomi di campo con spazi.
 - Corretto un bug nella selezione delle colonne in `tometo_tomato.py` che causava la duplicazione delle colonne di input quando i nomi coincidevano con quelli del file di riferimento (issue #11).
 - Resolved Issue #7: Changed default output logic.
