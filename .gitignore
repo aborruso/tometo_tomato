@@ -13,3 +13,12 @@ dist/
 # Quarto
 _site/
 /.quarto/
+
+# Ignore compiled python files and caches
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Local debug files
+debug_read_header.py
+debug_test.py
