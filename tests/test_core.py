@@ -63,7 +63,7 @@ def test_add_field_with_spaces(tmp_path):
 
     # Run the main script as a subprocess
     cmd = [
-        "python3", "src/tometo_tomato.py",
+        "python3", "src/tometo_tomato/tometo_tomato.py",
         str(input_path), str(ref_path),
         "-j", "city,City Name",
         "-a", "Special ID",
@@ -106,7 +106,7 @@ def test_scorer_option(tmp_path):
 
     # --- Run with default scorer (ratio) ---
     cmd_ratio = [
-        "python3", "src/tometo_tomato.py",
+        "python3", "src/tometo_tomato/tometo_tomato.py",
         str(input_path), str(ref_path),
         "-j", "city,city_ref",
         "-s", # show score
@@ -117,7 +117,7 @@ def test_scorer_option(tmp_path):
 
     # --- Run with token_set_ratio scorer ---
     cmd_token_set = [
-        "python3", "src/tometo_tomato.py",
+        "python3", "src/tometo_tomato/tometo_tomato.py",
         str(input_path), str(ref_path),
         "-j", "city,city_ref",
         "-s", # show score
@@ -163,7 +163,7 @@ def test_clean_whitespace_option(tmp_path):
 
     # Run without --clean-whitespace
     cmd_no_clean = [
-        "python3", "src/tometo_tomato.py",
+        "python3", "src/tometo_tomato/tometo_tomato.py",
         str(input_path), str(ref_path),
         "-j", "city,city",
         "-o", str(output_no_clean_path),
@@ -175,7 +175,7 @@ def test_clean_whitespace_option(tmp_path):
 
     # Run with --clean-whitespace
     cmd_clean = [
-        "python3", "src/tometo_tomato.py",
+        "python3", "src/tometo_tomato/tometo_tomato.py",
         str(input_path), str(ref_path),
         "-j", "city,city",
         "-o", str(output_path),

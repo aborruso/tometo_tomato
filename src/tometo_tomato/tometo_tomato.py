@@ -53,22 +53,24 @@ def parse_args():
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress all output except errors")
     return parser.parse_args()
 
-
 def read_header(path: str) -> List[str]:
     # Use DuckDB SQL engine as primary source of truth for header detection
     con = duckdb.connect(database=":memory:")
     safe_path = path.replace("'", "''")
-    q = f"SELECT * FROM read_csv_auto('{safe_path}', header=true, all_varchar=true) LIMIT 0"
+
+    # Usa la stessa query di test_csv_reading.py che funziona correttamente
+    q = f"SELECT * FROM read_csv_auto('{safe_path}', header=true, all_varchar=true)"
     res = con.execute(q)
+
     desc = getattr(res, 'description', None)
     if desc:
         return [c[0] for c in desc]
-    # last attempt: fetch dataframe columns
+    # Se DuckDB non popola description, provo a fetchdf (comportamento identico a test_csv_reading.py)
     try:
         df = res.fetchdf()
         return list(df.columns)
-    except Exception:
-        logging.error("DuckDB could not determine header columns for file: {}".format(path))
+    except Exception as e:
+        logging.error(f"DuckDB could not determine header columns for file: {path}. Error: {e}")
         raise
 
 
@@ -156,7 +158,7 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
             # Apply trim(regexp_replace(column, ' {2,}', ' ', 'g')) to remove redundant whitespace
             return f"trim(regexp_replace({base_expr}, ' {{2,}}', ' ', 'g'))"
         return base_expr
-    
+
     exprs = []
 
     if using_rapidfuzz:
@@ -170,10 +172,10 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
             inp, ref = pair.split(",")
             inp = inp.replace('"', '').replace("'", '').strip()
             ref = ref.replace('"', '').replace("'", '').strip()
-            
+
             inp_expr = clean_column_expr("inp", inp)
             ref_expr = clean_column_expr("ref", ref)
-            
+
             exprs.append(f"{score_func}(LOWER({ref_expr}), LOWER({inp_expr}))")
     else:
         # Fallback logic without rapidfuzz
@@ -185,10 +187,10 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
             inp, ref = pair.split(",")
             inp = inp.replace('"', '').replace("'", '').strip()
             ref = ref.replace('"', '').replace("'", '').strip()
-            
+
             inp_expr = clean_column_expr("inp", inp)
             ref_expr = clean_column_expr("ref", ref)
-            
+
             # we will build an expression that computes: (1 - levenshtein/NULLIF(GREATEST(LENGTH(a), LENGTH(b)),0)) * 100
             expr = (
                 "(1.0 - CAST(levenshtein(LOWER({ref_expr}), LOWER({inp_expr})) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER({ref_expr})), LENGTH(LOWER({inp_expr}))),0)) * 100"
@@ -216,7 +218,7 @@ def main():
         logging.info("\nExample:")
         logging.info("  tometo_tomato input.csv ref.csv -j \"col1,col_ref1\" -j \"col2,col_ref2\" -a \"field_to_add1\" -a \"field_to_add2\" -o \"output_clean.csv\"")
         logging.info("") # Add an empty line for better formatting
-    
+
 
     # Build join pairs
     join_pairs = build_join_pairs(args)
@@ -256,15 +258,15 @@ def main():
                         # Apply trim(regexp_replace(column, ' {2,}', ' ', 'g')) to remove redundant whitespace
                         return f"trim(regexp_replace({base_expr}, ' {{2,}}', ' ', 'g'))"
                     return base_expr
-                
+
                 for pair in join_pairs:
                     inp, ref = pair.split(",")
                     inp = inp.replace('"', '').replace("'", '').strip()
                     ref = ref.replace('"', '').replace("'", '').strip()
-                    
+
                     inp_expr = clean_column_expr_damerau("inp", inp)
                     ref_expr = clean_column_expr_damerau("ref", ref)
-                    
+
                     expr = (
                         "(1.0 - CAST(damerau_levenshtein(LOWER({ref_expr}), LOWER({inp_expr})) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER({ref_expr})), LENGTH(LOWER({inp_expr}))),0)) * 100"
                     ).format(ref_expr=ref_expr, inp_expr=inp_expr)
