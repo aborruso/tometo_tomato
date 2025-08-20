@@ -2,6 +2,7 @@
 
 ## 2025-08-20
 
+- Ottimizzato il trigger del workflow di CI per l'attivazione solo su modifiche a file di codice, test o configurazione.
 - Created basic Quarto documentation configuration.
 
 ## 2025-08-19
