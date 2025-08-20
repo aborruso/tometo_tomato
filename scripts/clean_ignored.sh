@@ -26,7 +26,7 @@ if [ -z "$to_remove" ]; then
 	exit 0
 fi
 
-echo "The following ignored files/directories will be removed:" 
+echo "The following ignored files/directories will be removed:"
 printf "%s\n" "$to_remove"
 
 # Remove safely, handling spaces and special characters. Use null-delimited xargs.
