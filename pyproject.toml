@@ -4,16 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tometo_tomato"
-description = "A utility for fuzzy joining tabular data using DuckDB."
+version = "0.0.1"
+description = "A fuzzy join utility using DuckDB"
 readme = "README.md"
 requires-python = ">=3.8"
-license = "MIT"
+license = { file = "LICENSE" }
+keywords = ["duckdb", "fuzzy-join", "etl", "data-processing"]
 authors = [
-  {name = "Andrea Borruso", email = "aborruso@gmail.com"},
+  { name = "Andrea Borruso", email = "andrea.borruso@gmail.com" }
 ]
-dynamic = ["version"]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -23,12 +25,10 @@ dependencies = [
 
 [project.urls]
 "Homepage" = "https://github.com/aborruso/tometo_tomato"
+"Bug Tracker" = "https://github.com/aborruso/tometo_tomato/issues"
 
 [project.scripts]
-tometo_tomato = "tometo_tomato:main"
+tometo_tomato = "tometo_tomato.tometo_tomato:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.setuptools_scm]
-write_to = "src/_version.py"
