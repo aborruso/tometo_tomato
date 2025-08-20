@@ -14,7 +14,8 @@ on:
       - 'src/**/*.py'
       - 'tests/**/*.py'
       - 'pyproject.toml'
-      - '.github/workflows/ci.yml' 
+      - '.github/workflows/ci.yml'
+  workflow_dispatch: 
 
 jobs:
   test:
