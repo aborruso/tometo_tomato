@@ -1,5 +1,9 @@
 # LOG
 
+## 2025-08-20
+
+- Created basic Quarto documentation configuration.
+
 ## 2025-08-19
 
 - Aggiunto il parametro `--scorer` per selezionare l'algoritmo di matching (`ratio` o `token_set_ratio`).
