@@ -1,0 +1,7 @@
+---
+title: "About Me"
+---
+
+This is the about page.
+
+You can put information about yourself or your project here.
