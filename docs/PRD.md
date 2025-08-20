@@ -1,80 +1,84 @@
-# PRD: Procedura di Join Flessibile (Fuzzy Join)
+# PRD: Flexible Join Procedure (Fuzzy Join)
 
-## Introduzione
+## Introduction
 
-### Contesto
+### Context
 
-L'integrazione di dati provenienti da fonti diverse presenta spesso una sfida comune: la mancanza di chiavi di join univoche e consistenti. Errori di battitura, abbreviazioni, variazioni nella formattazione o semplici discrepanze (es. "Reggio di Calabria", "Reggio Calabria", "Reggiò Calabria") rendono inefficaci i join SQL standard (`A.key = B.key`).
+Integrating data from different sources often presents a common challenge: the lack of unique and consistent join keys. Typos, abbreviations, formatting variations, or simple discrepancies (e.g., "Reggio di Calabria", "Reggio Calabria", "Reggiò Calabria") render standard SQL joins (`A.key = B.key`) ineffective.
 
-Questo documento definisce i requisiti per una procedura di "fuzzy join" che permette di collegare record tra due tabelle basandosi sulla somiglianza testuale dei campi, anziché su una corrispondenza esatta.
+This document defines the requirements for a "fuzzy join" procedure that allows connecting records between two tables based on the textual similarity of fields, rather than an exact match.
 
-### Obiettivo
+### Objective
 
-Creare un processo robusto, configurabile e performante per eseguire il join di tabelle tramite *fuzzy string matching*. Il sistema dovrà identificare la migliore corrispondenza possibile per ogni record, gestire in modo trasparente le ambiguità e fornire output chiari e pronti per l'analisi.
+To create a robust, configurable, and high-performance process for performing table joins via *fuzzy string matching*. The system must identify the best possible match for each record, transparently handle ambiguities, and provide clear, analysis-ready outputs.
 
-## Requisiti Funzionali
+## Functional Requirements
 
-### RF1: Logica di Join Basata su Somiglianza
+### FR1: Similarity-Based Join Logic
 
-La procedura consente di effettuare un join tra una tabella A (sinistra) e una tabella B (destra) basandosi sulla somiglianza di una o più coppie di colonne testuali.
-**Novità:** Se non vengono specificate le colonne da confrontare (`--join-pair`), il sistema utilizza automaticamente tutte le colonne con lo stesso nome presenti in entrambi i file.
+The procedure allows performing a join between table A (left) and table B (right) based on the similarity of one or more pairs of text columns.
+**New Feature:** If the columns to compare (`--join-pair`) are not specified, the system automatically uses all columns with the same name present in both files.
 
-### RF2: Calcolo del Punteggio di Somiglianza
+### FR2: Similarity Score Calculation
 
-Per ogni record della tabella A, il sistema calcola un punteggio di somiglianza (da 0 a 100) con tutti i record della tabella B, usando le funzioni dell'estensione `rapidfuzz` per DuckDB.
+For each record in table A, the system calculates a similarity score (from 0 to 100) with all records in table B, using the `rapidfuzz` extension functions for DuckDB.
 
-### RF3: Selezione della Migliore Corrispondenza (*Best Match*)
+### FR3: Best Match Selection
 
-- Il sistema identifica come "migliore corrispondenza" il record della tabella B che ottiene il punteggio di somiglianza più alto.
-- Un join è valido solo se il punteggio supera una **soglia minima configurabile** (es. `85`). Tutti i match con punteggio inferiore vengono scartati.
+- The system identifies the "best match" as the record in table B that obtains the highest similarity score.
+- A join is valid only if the score exceeds a **configurable minimum threshold** (e.g., `85`). All matches with a lower score are discarded.
 
-### RF4: Supporto per Join Multi-colonna
+### FR4: Multi-column Join Support
 
-La procedura supporta il join basato su più coppie di colonne. Se non specificato, usa tutte le colonne comuni.
+The procedure supports joining based on multiple column pairs. If not specified, it uses all common columns.
 
-### RF5: Gestione delle Ambiguità e dei Duplicati
+### FR5: Ambiguity and Duplicate Handling
 
-- **Definizione di ambiguità**: Si ha un'ambiguità quando un record della tabella A ottiene lo **stesso punteggio massimo** per più record della tabella B.
-- **Gestione**: In caso di ambiguità, il record di A e tutti i record corrispondenti di B vengono esclusi dal risultato finale del join.
-- **Output delle ambiguità**: Tutti i record esclusi a causa di ambiguità vengono salvati in un file separato (es. `log_ambigui.csv`) per analisi manuale.
+- **Definition of ambiguity**: Ambiguity occurs when a record in table A obtains the **same maximum score** for multiple records in table B.
+- **Handling**: In case of ambiguity, record A and all corresponding records in B are excluded from the final join result.
+- **Ambiguity Output**: All records excluded due to ambiguity are saved to a separate file (e.g., `ambiguous_log.csv`) for manual analysis.
 
-### RF6: Struttura degli Output
+### FR6: Output Structure
 
-La procedura produce due output principali:
-1.  **Tabella di Join Pulita**: File con i record che hanno trovato una corrispondenza univoca e superiore alla soglia.
-2.  **File di Log delle Ambiguità**: File con i record scartati per le ragioni descritte in RF5.
+The procedure produces two main outputs:
+1.  **Clean Join Table**: A file with records that found a unique match above the threshold.
+2.  **Ambiguity Log File**: A file with records discarded due to the reasons described in FR5.
 
-## Requisiti Non Funzionali
+## Non-Functional Requirements
 
-### RNF1: Performance
+### NFR1: Performance
 
-La procedura è ottimizzata per gestire dataset di grandi dimensioni. L'uso di `WHERE score > soglia` in DuckDB riduce il carico computazionale.
+The procedure is optimized to handle large datasets. The use of `WHERE score > threshold` in DuckDB reduces computational load.
 
-### RNF2: Configurabilità
+### NFR2: Configurability
 
-L'utente può configurare facilmente:
-- Percorsi dei file di input.
-- Nomi delle colonne da utilizzare per il join (opzionali, se omessi si usano le colonne comuni).
-- Soglia di somiglianza (numero da 0 a 100).
-- Funzione `rapidfuzz` da utilizzare (es. `rapidfuzz_ratio`, `rapidfuzz_token_sort_ratio`).
-- Percorsi dei file di output.
+The user can easily configure:
+- Input file paths.
+- Column names to use for the join (optional; if omitted, common columns are used).
+- Similarity threshold (number from 0 to 100).
+- `rapidfuzz` function to use (e.g., `rapidfuzz_ratio`, `rapidfuzz_token_sort_ratio`).
+- Output file paths.
 
-### RNF3: Tracciabilità
+### NFR3: Traceability
 
-Il processo produce un log di esecuzione con statistiche chiave: numero di record in input, join riusciti, casi ambigui.
+The process produces an execution log with key statistics: number of input records, successful joins, ambiguous cases.
 
-## Stack Tecnologico
+## Technology Stack
 
-- **Motore di elaborazione**: DuckDB
-- **Libreria di Fuzzy Matching**: Estensione `rapidfuzz` per DuckDB
-- **Orchestrazione**: Script Python (CLI monocomando: `tometo_tomato`)
+- **Processing Engine**: DuckDB
+- **Fuzzy Matching Library**: `rapidfuzz` extension for DuckDB
+- **Orchestration**: Python script (single-command CLI: `tometo_tomato`)
 
-## Caso d'Uso Esemplificativo (Associazione Codici ISTAT)
+## Documentation
 
-Questo caso d'uso dimostra l'associazione di codici ISTAT a un'anagrafica non ufficiale, gestendo le imprecisioni nei nomi delle località.
+The project documentation will be published using Quarto, leveraging the project's `docs` folder.
 
-- **Tabella A (`ref.csv` - Fonte ISTAT)**
-  Contiene dati ufficiali di comuni italiani.
+## Example Use Case (ISTAT Code Association)
+
+This use case demonstrates the association of ISTAT codes with an unofficial registry, managing inaccuracies in place names.
+
+- **Table A (`ref.csv` - ISTAT Source)**
+  Contains official data of Italian municipalities.
 
   | regione    | comune          | codice_comune |
   | :--------- | :-------------- | :------------ |
@@ -84,8 +88,8 @@ Questo caso d'uso dimostra l'associazione di codici ISTAT a un'anagrafica non uf
   | Lazio      | Roma            | 058091        |
   | Campania   | Napoli          | 063049        |
 
-- **Tabella B (`input.csv` - Anagrafica non ufficiale)**
-  Contiene dati con possibili errori di battitura.
+- **Table B (`input.csv` - Unofficial Registry)**
+  Contains data with possible typos.
 
   | regio     | comu          |
   | :-------- | :------------ |
@@ -95,30 +99,29 @@ Questo caso d'uso dimostra l'associazione di codici ISTAT a un'anagrafica non uf
   | Lazio     | Rma           |
   | Campania  | Napoli        |
 
-- **Obiettivo**
-  Associare il `codice_comune` dalla Tabella A (`ref.csv`) ai record della Tabella B (`input.csv`).
+- **Objective**
+  Associate the `codice_comune` from Table A (`ref.csv`) with records in Table B (`input.csv`).
 
-- **Configurazione (Esempio di Chiamata CLI)**
-  Il processo viene eseguito tramite il comando CLI monocomando `tometo_tomato`:
+- **Configuration (CLI Call Example)**
+  The process is executed via the single-command CLI `tometo_tomato`:
 
   ```bash
   tometo_tomato input.csv ref.csv --join-pair regione,regio --join-pair comune,comu --add-field codice_comune --threshold 90 --show-score
   ```
 
-  Oppure, se le colonne da confrontare coincidono nei due file:
+  Or, if the columns to compare coincide in the two files:
 
   ```bash
   tometo_tomato input.csv ref.csv --add-field codice_comune --threshold 90 --show-score
   ```
 
-- **Risultato Atteso**
+- **Expected Result**
 
-  Il processo identifica la migliore corrispondenza per ogni riga di `input.csv` in `ref.csv` e associa il `codice_comune` corrispondente.
+  The process identifies the best match for each row in `input.csv` within `ref.csv` and associates the corresponding `codice_comune`.
 
-  Esempio di match atteso:
-  - `input.csv` (Reggio Calabr, Calabria) -> `ref.csv` (Reggio Calabria, Calabria) con `codice_comune` 80065.
-  - `input.csv` (Torinoo, Piemonte) -> `ref.csv` (Torino, Piemonte) con `codice_comune` 001272.
-  - `input.csv` (Rma, Lazio) -> `ref.csv` (Roma, Lazio) con `codice_comune` 058091.
+  Example of expected matches:
+  - `input.csv` (Reggio Calabr, Calabria) -> `ref.csv` (Reggio Calabria, Calabria) with `codice_comune` 80065.
+  - `input.csv` (Torinoo, Piemonte) -> `ref.csv` (Torino, Piemonte) with `codice_comune` 001272.
+  - `input.csv` (Rma, Lazio) -> `ref.csv` (Roma, Lazio) with `codice_comune` 058091.
 
-  Il risultato finale è una tabella con le colonne di `input.csv` più il `codice_comune` associato.
-
+  The final result is a table with the columns from `input.csv` plus the associated `codice_comune`.
