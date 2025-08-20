@@ -1,7 +1,11 @@
 ---
-title: "Hello World"
+title: "Welcome to Tométo Tomato"
 ---
 
-Welcome to my first Quarto website!
+**Tired of messy data breaking your joins?**
 
-This is the home page.
+**Tométo Tomato** is your powerful command-line tool for **fuzzy data integration**. It intelligently connects disparate datasets by *similarity*, not just exact matches, even with typos or inconsistencies.
+
+Leveraging **DuckDB** and **rapidfuzz**, Tométo Tomato makes cleaning and merging your data fast, flexible, and reliable.
+
+**Unlock the true potential of your data. Get started now!**
