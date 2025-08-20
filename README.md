@@ -127,6 +127,27 @@ See the file [docs/PRD.md](docs/PRD.md) for a detailed description and practical
 - Use `--clean-whitespace` when your data contains inconsistent spacing (e.g., "Rome  City" vs " Rome City ") to improve matching accuracy.
 - The tool is designed to be simple, robust, and easily integrable into data cleaning workflows.
 
+## Development
+
+### Running tests
+
+To run the test suite locally, you need to set the `PYTHONPATH` to use the local source code:
+
+```bash
+# Run all tests
+PYTHONPATH=$(pwd)/src pytest -v
+
+# Run specific test files
+PYTHONPATH=$(pwd)/src pytest tests/test_read_header.py -v
+```
+
+Alternatively, you can install the package in editable mode:
+
+```bash
+pip install -e .
+pytest -v
+```
+
 ---
 
 For questions, suggestions, or bugs, open an issue on GitHub!
