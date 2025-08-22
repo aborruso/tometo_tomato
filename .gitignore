@@ -22,3 +22,4 @@ __pycache__/
 # Local debug files
 debug_read_header.py
 debug_test.py
+tmp_csvs/
