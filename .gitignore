@@ -29,9 +29,12 @@ env.bak/
 venv.bak/
 
 # Local debug files
-debug_read_header.py
-debug_test.py
+debug*.py
+debug*.py[cod]
 tmp_csvs/
 
 # Local test virtualenv
 .venv_test_tometo/
+
+# Temporary outputs
+tmp*.csv
