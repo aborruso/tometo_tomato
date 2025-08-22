@@ -164,8 +164,31 @@ def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
         return False
 
 
-def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str, clean_whitespace: bool = False) -> str:
+def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str, preprocessed: bool = False) -> str:
     import re
+
+    # Fast-path: columns have already been normalised into *_clean aliases.
+    # Build the score expression by simply referencing those aliases so the
+    # CROSS JOIN only runs the distance function.
+    if preprocessed:
+        exprs: List[str] = []
+
+        if using_rapidfuzz:
+            score_func = 'rapidfuzz_token_set_ratio' if scorer == 'token_set_ratio' else 'rapidfuzz_ratio'
+            for pair in join_pairs:
+                inp_col, ref_col = [c.strip().replace('"', '').replace("'", "") for c in pair.split(",")]
+                exprs.append(f"{score_func}(ref.\"{ref_col}_clean\", inp.\"{inp_col}_clean\")")
+        else:
+            if scorer != 'ratio':
+                logging.error(f"The '{scorer}' scorer requires the rapidfuzz extension, which could not be loaded.")
+                sys.exit(1)
+            for pair in join_pairs:
+                inp_col, ref_col = [c.strip().replace('"', '').replace("'", "") for c in pair.split(",")]
+                exprs.append(
+                    f"(1.0 - CAST(levenshtein(ref.\"{ref_col}_clean\", inp.\"{inp_col}_clean\") AS DOUBLE) "
+                    f"/ NULLIF(GREATEST(LENGTH(ref.\"{ref_col}_clean\"), LENGTH(inp.\"{inp_col}_clean\")),0)) * 100"
+                )
+        return " + ".join(exprs)
 
     def clean_column_expr(table_alias: str, column: str) -> str:
         """Generate column expression with default whitespace cleaning unless --raw-whitespace is set."""
@@ -332,30 +355,23 @@ def main():
 
     using_rapidfuzz = try_load_rapidfuzz(con)
     if using_rapidfuzz:
-        score_expr_base = choose_score_expr(True, join_pairs, args.scorer, args.raw_whitespace)
+        score_expr_base = choose_score_expr(True, join_pairs, args.scorer, True)
     else:
         try:
             con.execute("SELECT levenshtein('a','b')")
-            score_expr_base = choose_score_expr(False, join_pairs, args.scorer, args.raw_whitespace)
+            score_expr_base = choose_score_expr(False, join_pairs, args.scorer, True)
         except Exception:
             try:
                 con.execute("SELECT damerau_levenshtein('a','b')")
                 exprs = []
-                def clean_column_expr_damerau(table_alias: str, column: str) -> str:
-                    base_expr = f'{table_alias}."{column}"'
-                    if not args.raw_whitespace:
-                        return f"trim(regexp_replace({base_expr}, ' {{2,}}', ' ', 'g'))"
-                    return base_expr
                 for pair in join_pairs:
-                    inp, ref = pair.split(",")
-                    inp = inp.replace('"', '').replace("'", '').strip()
-                    ref = ref.replace('"', '').replace("'", '').strip()
-                    inp_expr = clean_column_expr_damerau("inp", inp)
-                    ref_expr = clean_column_expr_damerau("ref", ref)
-                    expr = (
-                        "(1.0 - CAST(damerau_levenshtein(LOWER({ref_expr}), LOWER({inp_expr})) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER({ref_expr})), LENGTH(LOWER({inp_expr}))),0)) * 100"
-                    ).format(ref_expr=ref_expr, inp_expr=inp_expr)
-                    exprs.append(expr)
+                    inp_col, ref_col = [c.strip().replace('"', '').replace("'", "") for c in pair.split(",")]
+                    inp_expr = f'inp."{inp_col}_clean"'
+                    ref_expr = f'ref."{ref_col}_clean"'
+                    exprs.append(
+                        f"(1.0 - CAST(damerau_levenshtein({ref_expr}, {inp_expr}) AS DOUBLE) "
+                        f"/ NULLIF(GREATEST(LENGTH({ref_expr}), LENGTH({inp_expr})),0)) * 100"
+                    )
                 score_expr_base = " + ".join(exprs)
             except Exception:
                 logging.error("No fuzzy function available in DuckDB (rapidfuzz, levenshtein or damerau_levenshtein). Install the rapidfuzz extension or use a DuckDB version that includes levenshtein.")
@@ -364,6 +380,39 @@ def main():
     # avg_score = (score_expr_base) / num_pairs
     num_pairs = len(join_pairs)
     avg_score_expr = f"({score_expr_base}) / {num_pairs}"
+
+    # ------------------------------------------------------------------
+    # Pre-process the join columns once so the CROSS JOIN only executes
+    # the distance function, not the expensive cleaning logic.
+    # ------------------------------------------------------------------
+    def _build_clean_expr(table_alias: str, column: str) -> str:
+        expr = f'{table_alias}."{column}"'
+        if not args.raw_whitespace:
+            expr = f"trim(regexp_replace({expr}, '\\s+', ' ', 'g'))"
+        if args.latinize:
+            expr = f"latinize_udf({expr})"
+        if not args.raw_case:
+            expr = f"lower({expr})"
+        return expr
+
+    input_clean_cols_sql = []
+    ref_clean_cols_sql = []
+    for pair in join_pairs:
+        inp_col, ref_col = [c.strip().replace('"', '').replace("'", "") for c in pair.split(",")]
+        input_clean_cols_sql.append(f"{_build_clean_expr('inp', inp_col)} AS \"{inp_col}_clean\"")
+        ref_clean_cols_sql.append(f"{_build_clean_expr('ref', ref_col)} AS \"{ref_col}_clean\"")
+
+    con.execute(f"""
+        CREATE TEMP VIEW input_preproc AS
+        SELECT inp.input_id, {', '.join(input_clean_cols_sql)}
+        FROM input_with_id inp;
+    """)
+
+    con.execute(f"""
+        CREATE TEMP VIEW ref_preproc AS
+        SELECT ref.*, {', '.join(ref_clean_cols_sql)}
+        FROM read_csv_auto('{args.reference_file}', header=true, all_varchar=true) AS ref;
+    """)
 
     # Create temporary views for common CTEs
     # Extract unique input columns from join_pairs for SQL selection
@@ -392,8 +441,8 @@ def main():
     con.execute(f"""
         CREATE TEMP VIEW all_scores AS
         SELECT inp.input_id, ref.*, {avg_score_expr} AS avg_score
-        FROM read_csv_auto('{args.reference_file}', header=true, all_varchar=true) AS ref
-        CROSS JOIN input_with_id AS inp;
+        FROM ref_preproc AS ref
+        CROSS JOIN input_preproc AS inp;
     """)
 
     con.execute(f"""
