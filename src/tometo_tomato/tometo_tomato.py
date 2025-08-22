@@ -395,25 +395,6 @@ def main():
             expr = f"lower({expr})"
         return expr
 
-    input_clean_cols_sql = []
-    ref_clean_cols_sql = []
-    for pair in join_pairs:
-        inp_col, ref_col = [c.strip().replace('"', '').replace("'", "") for c in pair.split(",")]
-        input_clean_cols_sql.append(f"{_build_clean_expr('inp', inp_col)} AS \"{inp_col}_clean\"")
-        ref_clean_cols_sql.append(f"{_build_clean_expr('ref', ref_col)} AS \"{ref_col}_clean\"")
-
-    con.execute(f"""
-        CREATE TEMP VIEW input_preproc AS
-        SELECT inp.input_id, {', '.join(input_clean_cols_sql)}
-        FROM input_with_id inp;
-    """)
-
-    con.execute(f"""
-        CREATE TEMP VIEW ref_preproc AS
-        SELECT ref.*, {', '.join(ref_clean_cols_sql)}
-        FROM read_csv_auto('{args.reference_file}', header=true, all_varchar=true) AS ref;
-    """)
-
     # Create temporary views for common CTEs
     # Extract unique input columns from join_pairs for SQL selection
     input_join_cols_for_sql = set()
@@ -436,6 +417,25 @@ def main():
         SELECT ROW_NUMBER() OVER () AS input_id, {input_cols_for_cte}
         FROM read_csv_auto('{args.input_file}', header=true, all_varchar=true)
         {where_clause};
+    """)
+
+    input_clean_cols_sql = []
+    ref_clean_cols_sql = []
+    for pair in join_pairs:
+        inp_col, ref_col = [c.strip().replace('"', '').replace("'", "") for c in pair.split(",")]
+        input_clean_cols_sql.append(f"{_build_clean_expr('inp', inp_col)} AS \"{inp_col}_clean\"")
+        ref_clean_cols_sql.append(f"{_build_clean_expr('ref', ref_col)} AS \"{ref_col}_clean\"")
+
+    con.execute(f"""
+        CREATE TEMP VIEW input_preproc AS
+        SELECT inp.input_id, {', '.join(input_clean_cols_sql)}
+        FROM input_with_id inp;
+    """)
+
+    con.execute(f"""
+        CREATE TEMP VIEW ref_preproc AS
+        SELECT ref.*, {', '.join(ref_clean_cols_sql)}
+        FROM read_csv_auto('{args.reference_file}', header=true, all_varchar=true) AS ref;
     """)
 
     con.execute(f"""
