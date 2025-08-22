@@ -32,3 +32,6 @@ venv.bak/
 debug_read_header.py
 debug_test.py
 tmp_csvs/
+
+# Local test virtualenv
+.venv_test_tometo/
