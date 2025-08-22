@@ -2,6 +2,7 @@
 
 ## 2025-08-22
 
+- **Removed `pandas` dependency**: Refactored `read_header()` function to eliminate dependency on pandas by replacing `fetchdf()` fallback with `LIMIT 0` approach that ensures `description` attribute is always populated. All tests pass and CLI functions correctly without pandas.
 - Added `--raw-case` flag to allow case-sensitive fuzzy matching (preserve original case during comparisons). (closes #26)
 - Implemented `--raw-whitespace` to disable default whitespace normalization; default behavior trims and collapses repeated spaces for more robust matching. (closes #27)
 - Implemented `--latinize` option using `unidecode` (registered as a DuckDB UDF) so accented and special characters are normalized for scoring while preserving original characters in outputs.

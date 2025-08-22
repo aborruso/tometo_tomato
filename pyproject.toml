@@ -22,7 +22,6 @@ dependencies = [
     "duckdb",
     "rapidfuzz",
     "unidecode",
-    "pandas",
 ]
 
 [project.urls]

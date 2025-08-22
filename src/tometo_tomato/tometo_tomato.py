@@ -67,10 +67,15 @@ def read_header(path: str) -> List[str]:
     desc = getattr(res, 'description', None)
     if desc:
         return [c[0] for c in desc]
-    # Se DuckDB non popola description, provo a fetchdf (comportamento identico a test_csv_reading.py)
+    # Se DuckDB non popola description, provo con LIMIT 0 che forza sempre la popolazione di description
     try:
-        df = res.fetchdf()
-        return list(df.columns)
+        q_limit = f"SELECT * FROM read_csv_auto('{safe_path}', header=true, all_varchar=true) LIMIT 0"
+        res_limit = con.execute(q_limit)
+        desc_limit = getattr(res_limit, 'description', None)
+        if desc_limit:
+            return [c[0] for c in desc_limit]
+        else:
+            raise Exception("Could not determine column names from CSV file")
     except Exception as e:
         logging.error(f"DuckDB could not determine header columns for file: {path}. Error: {e}")
         raise
