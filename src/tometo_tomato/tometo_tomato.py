@@ -50,6 +50,7 @@ def parse_args():
     parser.add_argument("--scorer", choices=['ratio', 'token_set_ratio'], default='ratio', help="Fuzzy matching algorithm to use.")
     parser.add_argument("--raw-whitespace", action="store_true", help="Disable whitespace normalization (no trimming or space reduction)")
     parser.add_argument("--raw-case", action="store_true", help="Enable case sensitive comparison (do not convert to lower-case)")
+    parser.add_argument("--latinize", action="store_true", help="Normalize/latinize accented and special characters before matching")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Increase verbosity (e.g., -v, -vv)")
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress all output except errors")
     return parser.parse_args()
@@ -152,25 +153,30 @@ def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
 
 
 def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str, clean_whitespace: bool = False) -> str:
+    import re
+
     def clean_column_expr(table_alias: str, column: str) -> str:
         """Generate column expression with default whitespace cleaning unless --raw-whitespace is set."""
         base_expr = f'{table_alias}."{column}"'
-        # Determina se usare la normalizzazione degli spazi
-        raw_whitespace = getattr(sys.modules['__main__'], 'args', None)
-        if raw_whitespace is None:
+        # Recupera i flag
+        args_obj = getattr(sys.modules['__main__'], 'args', None)
+        if args_obj is None:
             import inspect
             frame = inspect.currentframe()
             while frame:
                 if 'args' in frame.f_locals:
-                    raw_whitespace = frame.f_locals['args']
+                    args_obj = frame.f_locals['args']
                     break
                 frame = frame.f_back
-        raw_whitespace_flag = getattr(raw_whitespace, 'raw_whitespace', False)
+        raw_whitespace_flag = getattr(args_obj, 'raw_whitespace', False)
+        latinize_flag = getattr(args_obj, 'latinize', False)
+
+        expr = base_expr
         if not raw_whitespace_flag:
-            # Default: trim + riduci tutti i gruppi di spazi (spazi/tab) a uno solo
-            # DuckDB supporta \s per whitespace, quindi sostituisco tutti i gruppi di whitespace
-            return f"trim(regexp_replace({base_expr}, '\\s+', ' ', 'g'))"
-        return base_expr
+            expr = f"trim(regexp_replace({expr}, '\\s+', ' ', 'g'))"
+        if latinize_flag:
+            expr = f"latinize_udf({expr})"
+        return expr
 
     exprs = []
 
@@ -248,7 +254,6 @@ def main():
         logging.info("  tometo_tomato input.csv ref.csv -j \"col1,col_ref1\" -j \"col2,col_ref2\" -a \"field_to_add1\" -a \"field_to_add2\" -o \"output_clean.csv\"")
         logging.info("") # Add an empty line for better formatting
 
-
     # Build join pairs
     join_pairs = build_join_pairs(args)
     if not join_pairs:
@@ -266,8 +271,25 @@ def main():
     select_clean_cols, select_ambiguous_cols, selected_input_cols_list = prepare_select_clauses(join_pairs, add_fields, args.show_score)
 
     con = duckdb.connect(database=":memory:")
+
+    # Register UDF for latinization if needed
+    if args.latinize:
+        try:
+            from unidecode import unidecode
+            import re
+            def latinize_udf(text):
+                if text is None:
+                    return None
+                # Apply unidecode and remove non-alphanumeric characters except spaces
+                text = unidecode(text)
+                text = re.sub(r"[^a-zA-Z0-9 ]+", "", text)
+                return text
+            con.create_function("latinize_udf", latinize_udf, ['VARCHAR'], 'VARCHAR')
+        except ImportError:
+            logging.error("unidecode library is required for --latinize option. Install it with: pip install unidecode")
+            sys.exit(1)
+
     using_rapidfuzz = try_load_rapidfuzz(con)
-    # Passa il flag raw_whitespace alla funzione di scoring
     if using_rapidfuzz:
         score_expr_base = choose_score_expr(True, join_pairs, args.scorer, args.raw_whitespace)
     else:

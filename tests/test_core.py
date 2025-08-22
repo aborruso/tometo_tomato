@@ -75,11 +75,11 @@ def test_add_field_with_spaces(tmp_path):
     # Check the output file
     with open(output_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
-    
+
     assert len(lines) == 3 # Header + 2 data rows
     header = lines[0].strip()
     assert header == "city,ref_City Name,Special ID"
-    
+
     # Check content - order might vary
     rows = {lines[1].strip(), lines[2].strip()}
     assert "rome,Rome,ID-ROME-123" in rows
@@ -169,7 +169,7 @@ def test_clean_whitespace_option(tmp_path):
         "-o", str(output_path),
         "-s", "-t", "50"  # Lower threshold to see the difference
     ]
-    
+
     result_normalized = subprocess.run(cmd_normalized, capture_output=True, text=True)
     assert result_normalized.returncode == 0, f"Script failed with error: {result_normalized.stderr}"
 
@@ -182,7 +182,7 @@ def test_clean_whitespace_option(tmp_path):
         "--raw-whitespace",
         "-s", "-t", "50"  # Lower threshold to see the difference
     ]
-    
+
     result_raw = subprocess.run(cmd_raw, capture_output=True, text=True)
     assert result_raw.returncode == 0, f"Script failed with error: {result_raw.stderr}"
 
@@ -197,7 +197,7 @@ def test_clean_whitespace_option(tmp_path):
 
     score_normalized = extract_score(output_path)
     score_raw = extract_score(output_raw_path)
-    
+
     # With whitespace normalization (default), the score should be higher
     # because "Rome   City" vs "  Rome City  " becomes "Rome City" vs "Rome City"
     assert score_normalized > score_raw, f"Normalized whitespace should improve score: {score_normalized} > {score_raw}"
@@ -230,7 +230,7 @@ def test_latinize_option(tmp_path):
         "-o", str(output_path),
         "-s", "-t", "85"
     ]
-    
+
     result_no_latinize = subprocess.run(cmd_no_latinize, capture_output=True, text=True)
     assert result_no_latinize.returncode == 0, f"Script failed with error: {result_no_latinize.stderr}"
 
@@ -243,7 +243,7 @@ def test_latinize_option(tmp_path):
         "--latinize",
         "-s", "-t", "85"
     ]
-    
+
     result_latinize = subprocess.run(cmd_latinize, capture_output=True, text=True)
     assert result_latinize.returncode == 0, f"Script failed with error: {result_latinize.stderr}"
 
@@ -255,10 +255,10 @@ def test_latinize_option(tmp_path):
 
     matches_no_latinize = count_matches(output_path)
     matches_latinize = count_matches(output_latinize_path)
-    
+
     # Latinize should find at least as many matches, typically more
     assert matches_latinize >= matches_no_latinize, f"Latinize should find more or equal matches: {matches_latinize} >= {matches_no_latinize}"
-    
+
     # Check that original characters are preserved in output
     with open(output_latinize_path, "r", encoding="utf-8") as f:
         content = f.read()
