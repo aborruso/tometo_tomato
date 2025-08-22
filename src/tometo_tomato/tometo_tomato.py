@@ -48,7 +48,7 @@ def parse_args():
     parser.add_argument("--add-field", "-a", action="append", help="Fields from reference to add to output (space separated or repeated)")
     parser.add_argument("--show-score", "-s", action="store_true", help="Include avg_score in outputs")
     parser.add_argument("--scorer", choices=['ratio', 'token_set_ratio'], default='ratio', help="Fuzzy matching algorithm to use.")
-    parser.add_argument("--clean-whitespace", action="store_true", help="Remove redundant whitespace from columns before fuzzy matching")
+    parser.add_argument("--raw-whitespace", action="store_true", help="Disable whitespace normalization (no trimming or space reduction)")
     parser.add_argument("--raw-case", action="store_true", help="Enable case sensitive comparison (do not convert to lower-case)")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Increase verbosity (e.g., -v, -vv)")
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress all output except errors")
@@ -153,11 +153,23 @@ def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
 
 def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str, clean_whitespace: bool = False) -> str:
     def clean_column_expr(table_alias: str, column: str) -> str:
-        """Generate column expression with optional whitespace cleaning."""
+        """Generate column expression with default whitespace cleaning unless --raw-whitespace is set."""
         base_expr = f'{table_alias}."{column}"'
-        if clean_whitespace:
-            # Apply trim(regexp_replace(column, ' {2,}', ' ', 'g')) to remove redundant whitespace
-            return f"trim(regexp_replace({base_expr}, ' {{2,}}', ' ', 'g'))"
+        # Determina se usare la normalizzazione degli spazi
+        raw_whitespace = getattr(sys.modules['__main__'], 'args', None)
+        if raw_whitespace is None:
+            import inspect
+            frame = inspect.currentframe()
+            while frame:
+                if 'args' in frame.f_locals:
+                    raw_whitespace = frame.f_locals['args']
+                    break
+                frame = frame.f_back
+        raw_whitespace_flag = getattr(raw_whitespace, 'raw_whitespace', False)
+        if not raw_whitespace_flag:
+            # Default: trim + riduci tutti i gruppi di spazi (spazi/tab) a uno solo
+            # DuckDB supporta \s per whitespace, quindi sostituisco tutti i gruppi di whitespace
+            return f"trim(regexp_replace({base_expr}, '\\s+', ' ', 'g'))"
         return base_expr
 
     exprs = []
@@ -255,35 +267,28 @@ def main():
 
     con = duckdb.connect(database=":memory:")
     using_rapidfuzz = try_load_rapidfuzz(con)
+    # Passa il flag raw_whitespace alla funzione di scoring
     if using_rapidfuzz:
-        score_expr_base = choose_score_expr(True, join_pairs, args.scorer, args.clean_whitespace)
+        score_expr_base = choose_score_expr(True, join_pairs, args.scorer, args.raw_whitespace)
     else:
-        # check for levenshtein/damerau availability by trying a trivial query
         try:
             con.execute("SELECT levenshtein('a','b')")
-            score_expr_base = choose_score_expr(False, join_pairs, args.scorer, args.clean_whitespace)
+            score_expr_base = choose_score_expr(False, join_pairs, args.scorer, args.raw_whitespace)
         except Exception:
-            # try damerau_levenshtein
             try:
                 con.execute("SELECT damerau_levenshtein('a','b')")
-                # replace levenshtein with damerau_levenshtein in expressions
                 exprs = []
                 def clean_column_expr_damerau(table_alias: str, column: str) -> str:
-                    """Generate column expression with optional whitespace cleaning for damerau fallback."""
                     base_expr = f'{table_alias}."{column}"'
-                    if args.clean_whitespace:
-                        # Apply trim(regexp_replace(column, ' {2,}', ' ', 'g')) to remove redundant whitespace
+                    if not args.raw_whitespace:
                         return f"trim(regexp_replace({base_expr}, ' {{2,}}', ' ', 'g'))"
                     return base_expr
-
                 for pair in join_pairs:
                     inp, ref = pair.split(",")
                     inp = inp.replace('"', '').replace("'", '').strip()
                     ref = ref.replace('"', '').replace("'", '').strip()
-
                     inp_expr = clean_column_expr_damerau("inp", inp)
                     ref_expr = clean_column_expr_damerau("ref", ref)
-
                     expr = (
                         "(1.0 - CAST(damerau_levenshtein(LOWER({ref_expr}), LOWER({inp_expr})) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER({ref_expr})), LENGTH(LOWER({inp_expr}))),0)) * 100"
                     ).format(ref_expr=ref_expr, inp_expr=inp_expr)
