@@ -21,7 +21,8 @@ classifiers = [
 dependencies = [
     "duckdb",
     "rapidfuzz",
-    "unidecode",
+  "unidecode",
+  "numpy",
 ]
 
 [project.urls]

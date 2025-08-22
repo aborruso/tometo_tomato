@@ -31,7 +31,14 @@ from typing import List
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Fuzzy join utility using DuckDB")
+    parser = argparse.ArgumentParser(
+        description="Fuzzy join utility using DuckDB",
+        epilog=(
+            "Example:\n"
+            "  tometo_tomato input.csv ref.csv -j \"col1,col_ref1\" -j \"col2,col_ref2\" -a \"field_to_add1\" -a \"field_to_add2\" -o \"output_clean.csv\"\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
         "--version",
         action="version",
@@ -289,7 +296,16 @@ def main():
                 text = unidecode(text)
                 text = re.sub(r"[^a-zA-Z0-9 ]+", "", text)
                 return text
-            con.create_function("latinize_udf", latinize_udf, ['VARCHAR'], 'VARCHAR')
+            try:
+                con.create_function("latinize_udf", latinize_udf, ['VARCHAR'], 'VARCHAR')
+            except Exception as e:
+                # DuckDB may require numpy to register Python UDFs; provide a clearer error message
+                err_msg = str(e)
+                if 'numpy' in err_msg.lower() or 'numpy' in getattr(e, 'args', ('',))[0].lower():
+                    logging.error("Registering latinize_udf failed: DuckDB requires numpy to register Python UDFs. Install numpy (pip install numpy) and unidecode (pip install unidecode) and retry.")
+                else:
+                    logging.error(f"Failed to register latinize_udf: {e}")
+                sys.exit(1)
         except ImportError:
             logging.error("unidecode library is required for --latinize option. Install it with: pip install unidecode")
             sys.exit(1)
