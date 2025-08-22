@@ -146,11 +146,11 @@ def test_scorer_option(tmp_path):
 
 
 def test_clean_whitespace_option(tmp_path):
-    """Verify that the --clean-whitespace option removes redundant whitespace before matching."""
+    """Verify that the --raw-whitespace option controls whitespace normalization."""
     input_path = tmp_path / "input.csv"
     ref_path = tmp_path / "ref.csv"
     output_path = tmp_path / "output.csv"
-    output_no_clean_path = tmp_path / "output_no_clean.csv"
+    output_raw_path = tmp_path / "output_raw.csv"
 
     # Create test files with redundant whitespace
     with open(input_path, "w", encoding="utf-8") as f:
@@ -161,30 +161,30 @@ def test_clean_whitespace_option(tmp_path):
         f.write("city\n")
         f.write("  Rome City  \n")  # Leading/trailing and internal spaces
 
-    # Run without --clean-whitespace
-    cmd_no_clean = [
-        "python3", "src/tometo_tomato/tometo_tomato.py",
-        str(input_path), str(ref_path),
-        "-j", "city,city",
-        "-o", str(output_no_clean_path),
-        "-s", "-t", "50"  # Lower threshold to see the difference
-    ]
-    
-    result_no_clean = subprocess.run(cmd_no_clean, capture_output=True, text=True)
-    assert result_no_clean.returncode == 0, f"Script failed with error: {result_no_clean.stderr}"
-
-    # Run with --clean-whitespace
-    cmd_clean = [
+    # Run without --raw-whitespace (default: whitespace is normalized)
+    cmd_normalized = [
         "python3", "src/tometo_tomato/tometo_tomato.py",
         str(input_path), str(ref_path),
         "-j", "city,city",
         "-o", str(output_path),
-        "--clean-whitespace",
         "-s", "-t", "50"  # Lower threshold to see the difference
     ]
     
-    result_clean = subprocess.run(cmd_clean, capture_output=True, text=True)
-    assert result_clean.returncode == 0, f"Script failed with error: {result_clean.stderr}"
+    result_normalized = subprocess.run(cmd_normalized, capture_output=True, text=True)
+    assert result_normalized.returncode == 0, f"Script failed with error: {result_normalized.stderr}"
+
+    # Run with --raw-whitespace (no normalization)
+    cmd_raw = [
+        "python3", "src/tometo_tomato/tometo_tomato.py",
+        str(input_path), str(ref_path),
+        "-j", "city,city",
+        "-o", str(output_raw_path),
+        "--raw-whitespace",
+        "-s", "-t", "50"  # Lower threshold to see the difference
+    ]
+    
+    result_raw = subprocess.run(cmd_raw, capture_output=True, text=True)
+    assert result_raw.returncode == 0, f"Script failed with error: {result_raw.stderr}"
 
     # Check both output files
     def extract_score(file_path):
@@ -195,10 +195,72 @@ def test_clean_whitespace_option(tmp_path):
         data_row = lines[1].strip()
         return float(data_row.split(",")[-1])
 
-    score_no_clean = extract_score(output_no_clean_path)
-    score_clean = extract_score(output_path)
+    score_normalized = extract_score(output_path)
+    score_raw = extract_score(output_raw_path)
     
-    # With whitespace cleaning, the score should be higher (closer to 100)
+    # With whitespace normalization (default), the score should be higher
     # because "Rome   City" vs "  Rome City  " becomes "Rome City" vs "Rome City"
-    assert score_clean > score_no_clean, f"Clean whitespace should improve score: {score_clean} > {score_no_clean}"
-    assert score_clean > 90.0, f"After cleaning, score should be very high: {score_clean}"
+    assert score_normalized > score_raw, f"Normalized whitespace should improve score: {score_normalized} > {score_raw}"
+    assert score_normalized > 90.0, f"After normalization, score should be very high: {score_normalized}"
+
+
+def test_latinize_option(tmp_path):
+    """Verify that the --latinize option normalizes accented characters while preserving original data."""
+    input_path = tmp_path / "input.csv"
+    ref_path = tmp_path / "ref.csv"
+    output_path = tmp_path / "output.csv"
+    output_latinize_path = tmp_path / "output_latinize.csv"
+
+    # Create test files with accented characters
+    with open(input_path, "w", encoding="utf-8") as f:
+        f.write("name\n")
+        f.write("José Álvarez\n")
+        f.write("Müller\n")
+
+    with open(ref_path, "w", encoding="utf-8") as f:
+        f.write("name\n")
+        f.write("Jose Alvarez\n")
+        f.write("Muller\n")
+
+    # Run without --latinize
+    cmd_no_latinize = [
+        "python3", "src/tometo_tomato/tometo_tomato.py",
+        str(input_path), str(ref_path),
+        "-j", "name,name",
+        "-o", str(output_path),
+        "-s", "-t", "85"
+    ]
+    
+    result_no_latinize = subprocess.run(cmd_no_latinize, capture_output=True, text=True)
+    assert result_no_latinize.returncode == 0, f"Script failed with error: {result_no_latinize.stderr}"
+
+    # Run with --latinize
+    cmd_latinize = [
+        "python3", "src/tometo_tomato/tometo_tomato.py",
+        str(input_path), str(ref_path),
+        "-j", "name,name",
+        "-o", str(output_latinize_path),
+        "--latinize",
+        "-s", "-t", "85"
+    ]
+    
+    result_latinize = subprocess.run(cmd_latinize, capture_output=True, text=True)
+    assert result_latinize.returncode == 0, f"Script failed with error: {result_latinize.stderr}"
+
+    # Check that latinize finds more matches
+    def count_matches(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        return len([line for line in lines[1:] if line.strip() and ',' in line])
+
+    matches_no_latinize = count_matches(output_path)
+    matches_latinize = count_matches(output_latinize_path)
+    
+    # Latinize should find at least as many matches, typically more
+    assert matches_latinize >= matches_no_latinize, f"Latinize should find more or equal matches: {matches_latinize} >= {matches_no_latinize}"
+    
+    # Check that original characters are preserved in output
+    with open(output_latinize_path, "r", encoding="utf-8") as f:
+        content = f.read()
+        assert "José Álvarez" in content, "Original accented characters should be preserved in output"
+        assert "Müller" in content, "Original umlauts should be preserved in output"

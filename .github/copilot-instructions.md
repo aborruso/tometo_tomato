@@ -28,6 +28,7 @@ mentioned below when making code changes.
 - Integration & external dependencies
   - DuckDB is required at runtime; the code uses `duckdb.connect(':memory:')` and `read_csv_auto`.
   - `rapidfuzz` is an optional extension loaded via DuckDB's `INSTALL rapidfuzz; LOAD rapidfuzz;` call; the package is listed in `setup.py` but code tolerates absence at runtime.
+  - `unidecode` is required for `--latinize` option; handles character normalization (José → Jose, Müller → Muller).
 
 - Quick implementation contract (when editing core logic)
   - Inputs: two CSV paths, join pairs or infer flag, threshold, optional add-fields.
@@ -35,20 +36,21 @@ mentioned below when making code changes.
   - Error modes: exit with non-zero when no join pairs found or when no fuzzy function exists in DuckDB.
 
 - Examples to reference
-  - `python3 src/tometo_tomato.py data/raw/input.csv data/raw/ref.csv -i -a codice_comune -t 85 -s -o out.csv`
+  - `python3 src/tometo_tomato.py data/input.csv data/ref.csv -j name,ref_name --latinize -a city_code -t 85 -s -o out.csv`
   - In `README.md` examples for `tometo_tomato` CLI.
+  - Sample data in `data/input.csv` and `data/ref.csv` includes various normalization cases (accents, case, whitespace).
 
 - When making changes
   - Preserve existing command-line behavior unless explicitly updating the CLI contract in `README.md` and `setup.py` entry points.
   - Add unit tests for header parsing, `build_join_pairs` inference, and SQL-generation snippets.
-  - If editing SQL assembly, run a local smoke test against `data/raw/input.csv` and `data/raw/ref.csv` (or the sample files in `data/raw/`) to confirm outputs.
+  - If editing SQL assembly, run a local smoke test against `data/input.csv` and `data/ref.csv` (or the sample files in `data/`) to confirm outputs.
 
 If anything here is unclear or you need an example test harness, ask and I will add a tiny test script and CI notes.
 
 - CI / repo policies
   - A minimal GitHub Actions workflow is provided at `.github/workflows/ci.yml` (runs pytest on push/PR to `main`).
   - Add tests under `tests/` for any change to parsing, inference or SQL generation. Keep tests small and deterministic (use temporary files via pytest `tmp_path`).
-  - Prefer non-destructive smoke tests: use `data/raw/` sample CSVs when validating SQL output locally.
+  - Prefer non-destructive smoke tests: use `data/` sample CSVs when validating SQL output locally.
 
 - Running tests locally
   - The test suite imports the package `tometo_tomato`. Either install the package in editable mode or set PYTHONPATH:

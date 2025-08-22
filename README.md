@@ -39,15 +39,20 @@ After installation, the `tometo_tomato` command will be available in your termin
 
 ### Basic example
 Suppose we have two files:
-- `input.csv` (unofficial registry)
-- `ref.csv` (official source)
+- `data/input.csv` (input data with possible variations)
+- `data/ref.csv` (reference data)
 
+These sample files contain names with various formatting issues:
+- Case variations (Mario Rossi vs MARIO ROSSI)
+- Extra whitespace (Anna  Bianchi vs Anna Bianchi)
+- Accented characters (José Álvarez vs Jose Alvarez)
+- Different character encodings (Müller vs Muller)
 
 ### Basic example
 If the columns to compare have the same name in both files:
 
 ```bash
-tometo_tomato input.csv ref.csv --add-field codice_comune --threshold 90 --show-score --output-clean output.csv
+tometo_tomato data/input.csv data/ref.csv --add-field city_code --threshold 90 --show-score --output-clean output.csv
 ```
 
 If the columns have different names:
@@ -77,19 +82,48 @@ tometo_tomato "input data.csv" "reference data.csv" \
   --output-clean "clean output.csv"
 ```
 
-### Cleaning Whitespace for Better Matching
+### Normalization Options
 
-If your data contains inconsistent whitespace (multiple spaces, leading/trailing spaces), use `--clean-whitespace` to normalize spacing before fuzzy matching:
+#### Character Normalization with --latinize
+For data with accented characters or different character encodings, use `--latinize` to normalize characters before matching:
 
 ```bash
-tometo_tomato input.csv ref.csv \
-  --join-pair city,city_name \
-  --clean-whitespace \
+tometo_tomato data/input.csv data/ref.csv \
+  --join-pair name,ref_name \
+  --latinize \
+  --add-field city_code \
+  --threshold 85 \
+  --output-clean output.csv
+```
+
+This will match names like:
+- `José Álvarez` with `Jose Alvarez`
+- `Müller` with `Muller`
+- `François` with `Francois`
+
+The original accented characters are preserved in the output.
+
+#### Case Sensitivity Control
+By default, matching is case-insensitive. Use `--raw-case` for case-sensitive matching:
+
+```bash
+tometo_tomato data/input.csv data/ref.csv \
+  --join-pair name,ref_name \
+  --raw-case \
   --threshold 90 \
   --output-clean output.csv
 ```
 
-This is especially useful when dealing with data that has formatting inconsistencies like `"Rome  City"` vs `" Rome City "`.
+#### Whitespace Handling
+By default, whitespace is normalized (trimmed and multiple spaces reduced to single space). Use `--raw-whitespace` to disable this:
+
+```bash
+tometo_tomato data/input.csv data/ref.csv \
+  --join-pair name,ref_name \
+  --raw-whitespace \
+  --threshold 90 \
+  --output-clean output.csv
+```
 
 ### Main parameters
 - `input.csv` : CSV file to enrich/correct
