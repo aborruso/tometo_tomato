@@ -19,6 +19,17 @@ To create a robust, configurable, and high-performance process for performing ta
 The procedure allows performing a join between table A (left) and table B (right) based on the similarity of one or more pairs of text columns.
 **New Feature:** If the columns to compare (`--join-pair`) are not specified, the system automatically uses all columns with the same name present in both files.
 
+### Normalization and Raw Comparison
+
+- By default:
+  - Column matching is **case insensitive** (comparison ignores upper/lower case).
+  - Multiple and leading/trailing whitespaces are **removed** from each field before comparison.
+- CLI options:
+  - `--raw-case`: enables case sensitive comparison (disables lower-case conversion)
+  - `--raw-whitespace`: preserves whitespaces (disables whitespace normalization)
+  - `--latinize`: normalizes accented characters and apostrophes, converting non-latin characters to latin and removing special characters (e.g. "Cefalù" and "Cefalu'" both become "Cefalu")
+- All options can be combined as needed.
+
 ### FR2: Similarity Score Calculation
 
 For each record in table A, the system calculates a similarity score (from 0 to 100) with all records in table B, using the `rapidfuzz` extension functions for DuckDB.
@@ -77,51 +88,49 @@ The project documentation will be published using Quarto, leveraging the project
 
 This use case demonstrates the association of ISTAT codes with an unofficial registry, managing inaccuracies in place names.
 
-- **Table A (`ref.csv` - ISTAT Source)**
+**Table A (`ref.csv` - Official ISTAT Source)**
   Contains official data of Italian municipalities.
 
-  | regione    | comune          | codice_comune |
-  | :--------- | :-------------- | :------------ |
-  | Calabria   | Reggio Calabria | 80065         |
-  | Lombardia  | Milano          | 015146        |
-  | Piemonte   | Torino          | 001272        |
-  | Lazio      | Roma            | 058091        |
-  | Campania   | Napoli          | 063049        |
+  | region     | municipality      | municipality_code |
+  | :--------- | :--------------- | :---------------- |
+  | Calabria   | Reggio Calabria  | 80065             |
+  | Lombardy   | Milan            | 015146            |
+  | Piedmont   | Turin            | 001272            |
+  | Lazio      | Rome             | 058091            |
+  | Campania   | Naples           | 063049            |
 
-- **Table B (`input.csv` - Unofficial Registry)**
+**Table B (`input.csv` - Unofficial Registry)**
   Contains data with possible typos.
 
-  | regio     | comu          |
-  | :-------- | :------------ |
-  | Calabria  | Reggio Calabr |
-  | Lombardia | Milano        |
-  | Piemonte  | Torinoo       |
-  | Lazio     | Rma           |
-  | Campania  | Napoli        |
+  | region     | municipality      |
+  | :--------- | :--------------- |
+  | Calabria   | Reggio Calabr    |
+  | Lombardy   | Milan            |
+  | Piedmont   | Torinoo          |
+  | Lazio      | Rma              |
+  | Campania   | Naples           |
 
-- **Objective**
-  Associate the `codice_comune` from Table A (`ref.csv`) with records in Table B (`input.csv`).
+**Objective**
+  Associate the `municipality_code` from Table A (`ref.csv`) with records in Table B (`input.csv`).
 
-- **Configuration (CLI Call Example)**
+**Configuration (CLI Call Example)**
   The process is executed via the single-command CLI `tometo_tomato`:
 
   ```bash
-  tometo_tomato input.csv ref.csv --join-pair regione,regio --join-pair comune,comu --add-field codice_comune --threshold 90 --show-score
+  tometo_tomato input.csv ref.csv --join-pair region,region --join-pair municipality,municipality --add-field municipality_code --threshold 90 --show-score
   ```
 
   Or, if the columns to compare coincide in the two files:
 
   ```bash
-  tometo_tomato input.csv ref.csv --add-field codice_comune --threshold 90 --show-score
+  tometo_tomato input.csv ref.csv --add-field municipality_code --threshold 90 --show-score
   ```
 
-- **Expected Result**
-
-  The process identifies the best match for each row in `input.csv` within `ref.csv` and associates the corresponding `codice_comune`.
+  The process identifies the best match for each row in `input.csv` within `ref.csv` and associates the corresponding `municipality_code`.
 
   Example of expected matches:
-  - `input.csv` (Reggio Calabr, Calabria) -> `ref.csv` (Reggio Calabria, Calabria) with `codice_comune` 80065.
-  - `input.csv` (Torinoo, Piemonte) -> `ref.csv` (Torino, Piemonte) with `codice_comune` 001272.
-  - `input.csv` (Rma, Lazio) -> `ref.csv` (Roma, Lazio) with `codice_comune` 058091.
+  - `input.csv` (Reggio Calabr, Calabria) -> `ref.csv` (Reggio Calabria, Calabria) with `municipality_code` 80065.
+  - `input.csv` (Torinoo, Piedmont) -> `ref.csv` (Turin, Piedmont) with `municipality_code` 001272.
+  - `input.csv` (Rma, Lazio) -> `ref.csv` (Rome, Lazio) with `municipality_code` 058091.
 
-  The final result is a table with the columns from `input.csv` plus the associated `codice_comune`.
+  The final result is a table with the columns from `input.csv` plus the associated `municipality_code`.

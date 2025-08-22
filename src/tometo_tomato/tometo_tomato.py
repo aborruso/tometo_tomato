@@ -49,6 +49,7 @@ def parse_args():
     parser.add_argument("--show-score", "-s", action="store_true", help="Include avg_score in outputs")
     parser.add_argument("--scorer", choices=['ratio', 'token_set_ratio'], default='ratio', help="Fuzzy matching algorithm to use.")
     parser.add_argument("--clean-whitespace", action="store_true", help="Remove redundant whitespace from columns before fuzzy matching")
+    parser.add_argument("--raw-case", action="store_true", help="Enable case sensitive comparison (do not convert to lower-case)")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Increase verbosity (e.g., -v, -vv)")
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress all output except errors")
     return parser.parse_args()
@@ -161,6 +162,22 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
 
     exprs = []
 
+    # Determine if case sensitive (raw) or not
+    case_sensitive = getattr(sys.modules['__main__'], 'args', None)
+    if case_sensitive is None:
+        # fallback: try to get from caller
+        import inspect
+        frame = inspect.currentframe()
+        while frame:
+            if 'args' in frame.f_locals:
+                case_sensitive = frame.f_locals['args']
+                break
+            frame = frame.f_back
+    raw_case = getattr(case_sensitive, 'raw_case', False)
+
+    def maybe_lower(expr):
+        return expr if raw_case else f"LOWER({expr})"
+
     if using_rapidfuzz:
         # Select the function name based on the scorer argument
         if scorer == 'token_set_ratio':
@@ -176,7 +193,7 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
             inp_expr = clean_column_expr("inp", inp)
             ref_expr = clean_column_expr("ref", ref)
 
-            exprs.append(f"{score_func}(LOWER({ref_expr}), LOWER({inp_expr}))")
+            exprs.append(f"{score_func}({maybe_lower(ref_expr)}, {maybe_lower(inp_expr)})")
     else:
         # Fallback logic without rapidfuzz
         if scorer != 'ratio':
@@ -193,8 +210,8 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
 
             # we will build an expression that computes: (1 - levenshtein/NULLIF(GREATEST(LENGTH(a), LENGTH(b)),0)) * 100
             expr = (
-                "(1.0 - CAST(levenshtein(LOWER({ref_expr}), LOWER({inp_expr})) AS DOUBLE) / NULLIF(GREATEST(LENGTH(LOWER({ref_expr})), LENGTH(LOWER({inp_expr}))),0)) * 100"
-            ).format(ref_expr=ref_expr, inp_expr=inp_expr)
+                f"(1.0 - CAST(levenshtein({maybe_lower(ref_expr)}, {maybe_lower(inp_expr)}) AS DOUBLE) / NULLIF(GREATEST(LENGTH({maybe_lower(ref_expr)}), LENGTH({maybe_lower(inp_expr)})),0)) * 100"
+            )
             exprs.append(expr)
 
     # average
