@@ -310,6 +310,26 @@ def main():
             logging.error("unidecode library is required for --latinize option. Install it with: pip install unidecode")
             sys.exit(1)
 
+    # Check dataset size and warn if --latinize might be slow
+    if args.latinize:
+        # Quick row count estimate
+        try:
+            input_count_res = con.execute(f"SELECT COUNT(*) FROM read_csv_auto('{args.input_file}', header=true, all_varchar=true)")
+            input_count = input_count_res.fetchone()[0]
+
+            ref_count_res = con.execute(f"SELECT COUNT(*) FROM read_csv_auto('{args.reference_file}', header=true, all_varchar=true)")
+            ref_count = ref_count_res.fetchone()[0]
+
+            total_combinations = input_count * ref_count
+
+            if total_combinations > 10_000_000:  # 10 million combinations
+                logging.warning(f"Large dataset detected ({input_count:,} × {ref_count:,} = {total_combinations:,} combinations)")
+                logging.warning("--latinize option may cause significant performance impact on large datasets.")
+                logging.warning("Consider using smaller samples or removing --latinize for better performance.")
+
+        except Exception as e:
+            logging.debug(f"Could not estimate dataset size: {e}")
+
     using_rapidfuzz = try_load_rapidfuzz(con)
     if using_rapidfuzz:
         score_expr_base = choose_score_expr(True, join_pairs, args.scorer, args.raw_whitespace)
