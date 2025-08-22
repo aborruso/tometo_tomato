@@ -1,5 +1,16 @@
 # LOG
 
+## 2025-08-22
+
+- Added `--raw-case` flag to allow case-sensitive fuzzy matching (preserve original case during comparisons). (closes #26)
+- Implemented `--raw-whitespace` to disable default whitespace normalization; default behavior trims and collapses repeated spaces for more robust matching. (closes #27)
+- Implemented `--latinize` option using `unidecode` (registered as a DuckDB UDF) so accented and special characters are normalized for scoring while preserving original characters in outputs.
+- Unified example input files under `data/` (`data/input.csv` and `data/ref.csv`) with comprehensive test cases for case, whitespace, and accent normalization.
+- Updated README and Copilot instructions to document normalization flags and example usage.
+- Added unit tests for whitespace normalization and latinization; updated existing tests to match new flags and behavior.
+- Updated `.gitignore` to exclude common virtual environment directories (e.g. `.venv/`) and cleaned temporary sample CSVs from the repo.
+- General cleanup and refactoring of SQL and UDF registration logic to apply normalization only during scoring.
+
 ## 2025-08-20
 
 - Ottimizzato il trigger del workflow di CI per l'attivazione solo su modifiche a file di codice, test o configurazione.
