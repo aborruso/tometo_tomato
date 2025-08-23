@@ -67,6 +67,21 @@ tometo_tomato input.csv ref.csv \
   --output-clean output.csv
 ```
 
+### Automated Processing
+
+For scripts and automated workflows, use `--force` to skip file overwrite confirmations:
+
+```bash
+tometo_tomato input.csv ref.csv \
+  --join-pair regione,regio \
+  --join-pair comune,comu \
+  --add-field codice_comune \
+  --threshold 90 \
+  --show-score \
+  --output-clean output.csv \
+  --force
+```
+
 ### Handling Field Names with Spaces
 
 If your column names in the CSV files contain spaces, you must enclose the arguments for `--join-pair` (`-j`) and `--add-field` (`-a`) in quotes. This ensures that the shell treats them as a single argument.
@@ -137,6 +152,7 @@ tometo_tomato data/input.csv data/ref.csv \
 - `--output-ambiguous`    : Output file for ambiguous matches (optional)
 - `--scorer ALGO`         : Fuzzy matching algorithm (`ratio` or `token_set_ratio`). Default: `ratio`.
 - `--clean-whitespace`    : Remove redundant whitespace from columns before fuzzy matching
+- `--force`, `-f`         : Overwrite existing output files without prompting
 
 ## Logic and Behavior
 - Fuzzy comparison is always case-insensitive (LOWER).
@@ -147,6 +163,7 @@ tometo_tomato data/input.csv data/ref.csv \
 - If no ambiguous records are found, a message "No ambiguous records found." is displayed.
 - If ambiguous records are found, a warning message is displayed, indicating the file to check.
 - The `--clean-whitespace` option applies whitespace normalization to join columns before fuzzy matching, removing leading/trailing spaces and replacing multiple consecutive spaces with single spaces.
+- **File Overwrite Protection**: By default, the script will prompt for confirmation before overwriting existing output files. Use `--force` to bypass this protection for automated scripts.
 
 ## Output
 - A CSV file with clean matches (name and path always specified with `--output-clean`).

@@ -30,6 +30,35 @@ except Exception as e:
 from typing import List
 
 
+def check_file_overwrite(file_path: str, force: bool = False) -> bool:
+    """Check if a file exists and prompt user for overwrite confirmation if needed.
+    
+    Args:
+        file_path: Path to the file to check
+        force: If True, skip the prompt and return True
+        
+    Returns:
+        True if we should proceed with writing/overwriting the file, False otherwise
+    """
+    if not os.path.exists(file_path):
+        return True
+        
+    if force:
+        return True
+        
+    # File exists and we're not forcing - prompt user
+    try:
+        response = input(f"File '{file_path}' already exists. Overwrite? [Y/n]: ").strip().lower()
+        if response == '' or response == 'y' or response == 'yes':
+            return True
+        else:
+            return False
+    except (EOFError, KeyboardInterrupt):
+        # Handle non-interactive environments or user interruption
+        print("\nOperation cancelled.")
+        return False
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Fuzzy join utility using DuckDB",
@@ -60,6 +89,7 @@ def parse_args():
     parser.add_argument("--latinize", action="store_true", help="Normalize/latinize accented and special characters before matching")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Increase verbosity (e.g., -v, -vv)")
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress all output except errors")
+    parser.add_argument("--force", "-f", action="store_true", help="Overwrite existing output files without prompting")
     return parser.parse_args()
 
 def read_header(path: str) -> List[str]:
@@ -461,9 +491,19 @@ COPY (
 ) TO '{args.output_clean}' (HEADER, DELIMITER ',');
 """
 
+    # Check for file overwrite before writing clean output
+    if not check_file_overwrite(args.output_clean, args.force):
+        logging.error("Operation cancelled: will not overwrite existing file.")
+        sys.exit(1)
+
     con.execute(sql_clean)
 
     if args.output_ambiguous:
+        # Check for file overwrite before writing ambiguous output
+        if not check_file_overwrite(args.output_ambiguous, args.force):
+            logging.error("Operation cancelled: will not overwrite existing ambiguous file.")
+            sys.exit(1)
+
         # Build DuckDB SQL for ambiguous output
         sql_amb = f"""
 COPY (
