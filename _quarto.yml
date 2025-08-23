@@ -4,6 +4,11 @@ project:
     - "*.qmd"
     - "!*.md"
 
+resources:
+  - files/input.csv
+  - files/ref.csv
+  - files/ref_sample.csv
+
 website:
   title: "Tometo Tomato"
   navbar:
