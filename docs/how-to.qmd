@@ -1,0 +1,163 @@
+---
+title: "Come usare Tométo Tomato"
+---
+
+## Introduzione
+
+Chiunque lavori con i dati molto spesso si imbatte in colonne che dovrebbero rispettare una codifica, un valore standard, una lista di valori noti, ma presentano invece **errori di battitura**, **spazi in eccesso**, **caratteri speciali al posto di caratteri accentati**, **maiuscole/minuscole non coerenti**, ecc..
+
+Qui sotto ad esempio dei nomi ci città italiane, riportati in modo errato:
+
+| city            | tipo di errore    |
+|-----------------|-------------------|
+| Cefalu'         | bisognerebbe usare la `ù` e non `u'`  |
+| Reggio Calabria | Il nome corretto è `Reggio di Calabria` |
+| RODENGO-SAIANO  | bisognerebbe usare `Rodengo Saiano`, senza `-` e non tutto maiuscolo |
+: Esempi di nomi di città errati {.striped .small tbl-colwidths="[30,70]"}
+
+<br>
+Se volessi associare a queste città il codice[^code] che **Istat** - l'istituto nazionale di statistica - assegna a ciascuna città, non potrei farlo con una semplice operazione di join, perché i nomi non corrispondono esattamente. Associare un codice a ciascun comune è operazione molto importante perché mi consente di **unire** dati provenienti da fonti diverse, che altrimenti non potrei confrontare, ma anche di **generare** ad esempio **automaticamente** **mappe**, perché i software spesso usano proprio questi codici per identificare i comuni.
+
+[^code]: [Codes of Italian municipalities](https://www.istat.it/en/classification/codes-of-italian-municipalities-provinces-and-regions/)
+
+::: {.callout-tip appearance="simple"}
+
+## Pay Attention
+
+Chi fa didattica sui dati di solito infatti dice (urlando): **CODES, NOT LABELS!!**
+
+:::
+
+I codici correlati alle unità amministrative italiane sono pubblici e liberamente accessibili in CC-BY-4.0 su diverse sezioni del sito Istat. Uno di questi è il [SITUAS](https://situas.istat.it), in cui c'è la pagina con l'"[**Elenco dei codici e delle denominazioni delle unità territoriali**](https://situas.istat.it/web/#/territorio/body?id=61&dateFrom=2025-08-23)", scaricabili in formato `CSV` e `JSON`.
+
+| city | region    | istat_city_code |
+|-------------------------|------------|----------------------------|
+| Cefalù                  | Sicilia    | 082027                     |
+| Reggio di Calabria      | Calabria   | 080063                     |
+| Rodengo Saiano          | Lombardia  | 017163                     |
+: Esempio di dati ufficiali Istat sui comuni italiani {.striped .small}
+
+Se provassi a fare un join tra i dati errati e questi dati ufficiali, **non otterrei alcun risultato**.
+
+### File di esempio
+
+Queste sono le nostre due tabelle di esempio, disponibili come [`input.csv`](files/input.csv) e [`ref_sample.csv`](files/ref_sample.csv) in modo che sia possibile scaricarle e provare a eseguire gli esempi.
+
+## Fare il JOIN
+
+Il primo test è quello di lanciare una semplice query SQL di join, per vedere cosa succede a partire dai nostri dati di esempio.
+
+:::::: columns
+::: {.column width="46%"}
+| city            | region    |
+|-----------------|-----------|
+| Cefalu'         | Sicilia   |
+| Reggio Calabria | CALABRIA  |
+| RODENGO-SAIANO  | Lombardia |
+
+: The raw data {.striped .small}
+:::
+
+::: {.column width="8%"}
+:::
+
+::: {.column width="46%"}
+| city               | region    | city_code |
+|--------------------|-----------|-----------|
+| Cefalù             | Sicilia   | 082027    |
+| Reggio di Calabria | Calabria  | 080063    |
+| Rodengo Saiano     | Lombardia | 017164    |
+
+: The reference data {.striped .small}
+:::
+::::::
+
+<br>
+La query può essere quella di sotto. È impostata come un `LEFT JOIN`, in modo da mostrare tutte le righe della tabella di sinistra, anche se non trovano corrispondenza nella tabella di destra.
+
+```sql
+SELECT
+  i.*,
+  r.city_code
+FROM read_csv_auto('input.csv') AS i
+LEFT JOIN read_csv_auto('ref_sample.csv') AS r
+  ON i.city = r.city AND i.region = r.region
+```
+
+::: {.callout-note}
+**Nota**: l'uso di `read_csv_auto` nella query di sopra è una funzionalità di [**DuckDB**](https://duckdb.org/) che consente di leggere direttamente file CSV senza doverli importare prima in una tabella. In questo modo è possibile fare esperimenti veloci senza dover creare tabelle temporanee.
+:::
+
+In output otteniamo un pessimo risultato: nessuna delle righe della tabella di sinistra trova corrispondenza nella tabella di destra, e quindi il campo `city_code` risulta sempre `NULL`.
+
+| city            | region    | istat_city_code |
+|-----------------|-----------|-----------------|
+| Cefalu'         | Sicilia   | NULL            |
+| Reggio Calabria | CALABRIA  | NULL            |
+| RODENGO-SAIANO  | Lombardia | NULL            |
+: Risultato di un join tra dati errati e dati ufficiali {.striped .small}
+
+
+
+## Fare il JOIN "fuzzy"
+
+Un JOIN "fuzzy", sfumato, è quello che consente di trovare corrispondenze anche quando i valori non sono esattamente uguali, ma "simili". Ad esempio, potremmo voler considerare come corrispondenti i nomi di città che differiscono per un solo carattere, o che hanno una [distanza di Levenshtein](https://duckdb.org/docs/stable/sql/functions/text#levenshteins1-s2) (numero di operazioni necessarie per trasformare una stringa in un'altra) inferiore a una certa soglia.
+
+Potremmo riscrivere la query di join precedente in questo modo, usando la funzione `levenshtein` di DuckDB per il campo `city` in modo da considererare come corrispondenti i nomi di città che differiscono per al massimo 2 caratteri:
+
+
+```sql
+SELECT
+  i.city AS input_city,
+  i.region AS input_region,
+  r.city AS ref_city,
+  r.region AS ref_region,
+  r.city_code,
+  levenshtein(i.city, r.city) AS levenshtein_distance
+FROM read_csv_auto('input.csv') AS i
+JOIN read_csv_auto('ref_sample.csv') AS r
+  ON i.region = r.region
+  AND levenshtein(i.city, r.city) <= 2;
+```
+
+| input_city      | input_region | ref_city        | ref_region | city_code | levenshtein_distance |
+|-----------------|-------------|-----------------|------------|-----------|----------------------|
+| Cefalu'         | Sicilia     | Cefalù          | Sicilia    | 082027    | 2                    |
+: Risultato di un join fuzzy tra dati errati e dati ufficiali {.striped .small}
+
+L'unica città di cui c'è un risulato è soltanto `Cefalu'`, perché la **distanza** di Levenshtein tra `Cefalu'` e `Cefalù` è **2**: sostituzione di `u'` con `ù` e rimozione di `'`.
+
+Se aumentiamo la soglia a 10, non cambia nulla, perché ad esempio il Comune di `Rodengo Saiano` è scritto in maiuscolo e con il trattino e la distanza tra `RODENGO-SAIANO` e `Rodengo Saiano` è pari a **12**:
+
+```bash
+SELECT levenshtein('RODENGO-SAIANO', 'Rodengo Saiano') AS distance;
+
+12
+```
+
+Se si imposta la soglia a 15 ne otteniamo in ogni caso soltanto 2, perché il JOIN del campo `region` non trova corrispondenza tra `CALABRIA` e `Calabria`. Quindi dovremmo usare una funzione di distanza tra stringhe anche per il campo `region`:
+
+```
+SELECT
+  i.city AS input_city,
+  i.region AS input_region,
+  r.city AS ref_city,
+  r.region AS ref_region,
+  r.city_code,
+  levenshtein(i.city, r.city) AS levenshtein_distance
+FROM read_csv_auto('input.csv') AS i
+JOIN read_csv_auto('ref_sample.csv') AS r
+  ON levenshtein(i.city, r.city) <= 15
+  AND levenshtein(LOWER(i.region), LOWER(r.region)) < 10
+```
+
+Ma è l'output non è proprio quello che ci aspettiamo, ovvero le nostre 3 città con i rispettivi codici:
+
+Cefalu'	Sicilia	Cefalù	Sicilia	082027	2
+Cefalu'	Sicilia	Reggio di Calabria	Calabria	080063	15
+Cefalu'	Sicilia	Rodengo Saiano	Lombardia	017163	12
+Reggio Calabria	CALABRIA	Cefalù	Sicilia	082027	12
+Reggio Calabria	CALABRIA	Reggio di Calabria	Calabria	080063	3
+Reggio Calabria	CALABRIA	Rodengo Saiano	Lombardia	017163	10
+RODENGO-SAIANO	Lombardia	Cefalù	Sicilia	082027	14
+RODENGO-SAIANO	Lombardia	Rodengo Saiano	Lombardia	017163	12
