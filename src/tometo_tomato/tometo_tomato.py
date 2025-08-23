@@ -32,20 +32,20 @@ from typing import List
 
 def check_file_overwrite(file_path: str, force: bool = False) -> bool:
     """Check if a file exists and prompt user for overwrite confirmation if needed.
-    
+
     Args:
         file_path: Path to the file to check
         force: If True, skip the prompt and return True
-        
+
     Returns:
         True if we should proceed with writing/overwriting the file, False otherwise
     """
     if not os.path.exists(file_path):
         return True
-        
+
     if force:
         return True
-        
+
     # File exists and we're not forcing - prompt user
     try:
         response = input(f"File '{file_path}' already exists. Overwrite? [Y/n]: ").strip().lower()
@@ -240,7 +240,7 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
         if not raw_whitespace_flag:
             expr = f"trim(regexp_replace({expr}, '\\s+', ' ', 'g'))"
         if latinize_flag:
-            expr = f"latinize_udf({expr})"
+            expr = f"strip_accents({expr})"
         return expr
 
     exprs = []
@@ -339,28 +339,23 @@ def main():
 
     # Register UDF for latinization if needed
     if args.latinize:
+        def latinize_udf(text):
+            if text is None:
+                return None
+            # Usa la funzione DuckDB strip_accents()
+            # Se chiamata come UDF Python, richiama la funzione SQL
+            # Ma qui, per efficienza, la UDF Python richiama la funzione DuckDB via SQL
+            # oppure, se DuckDB la supporta direttamente, si può usare in SQL
+            # Qui la UDF Python è un pass-through, la logica è in SQL
+            return text  # Nessuna modifica, la logica è in SQL con strip_accents()
         try:
-            from unidecode import unidecode
-            import re
-            def latinize_udf(text):
-                if text is None:
-                    return None
-                # Apply unidecode and remove non-alphanumeric characters except spaces
-                text = unidecode(text)
-                text = re.sub(r"[^a-zA-Z0-9 ]+", "", text)
-                return text
-            try:
-                con.create_function("latinize_udf", latinize_udf, ['VARCHAR'], 'VARCHAR')
-            except Exception as e:
-                # DuckDB may require numpy to register Python UDFs; provide a clearer error message
-                err_msg = str(e)
-                if 'numpy' in err_msg.lower() or 'numpy' in getattr(e, 'args', ('',))[0].lower():
-                    logging.error("Registering latinize_udf failed: DuckDB requires numpy to register Python UDFs. Install numpy (pip install numpy) and unidecode (pip install unidecode) and retry.")
-                else:
-                    logging.error(f"Failed to register latinize_udf: {e}")
-                sys.exit(1)
-        except ImportError:
-            logging.error("unidecode library is required for --latinize option. Install it with: pip install unidecode")
+            con.create_function("latinize_udf", latinize_udf, ['VARCHAR'], 'VARCHAR')
+        except Exception as e:
+            err_msg = str(e)
+            if 'numpy' in err_msg.lower() or 'numpy' in getattr(e, 'args', ('',))[0].lower():
+                logging.error("Registering latinize_udf failed: DuckDB requires numpy to register Python UDFs. Install numpy and retry.")
+            else:
+                logging.error(f"Failed to register latinize_udf: {e}")
             sys.exit(1)
 
     # Check dataset size and warn if --latinize might be slow
@@ -420,7 +415,7 @@ def main():
         if not args.raw_whitespace:
             expr = f"trim(regexp_replace({expr}, '\\s+', ' ', 'g'))"
         if args.latinize:
-            expr = f"latinize_udf({expr})"
+            expr = f"strip_accents({expr})"
         if not args.raw_case:
             expr = f"lower({expr})"
         return expr
