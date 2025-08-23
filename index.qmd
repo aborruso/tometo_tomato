@@ -46,4 +46,4 @@ Unlock the true potential of your data. Get started now!
 : Example fuzzy join result {.striped .small}
 
 <br>
-[[👉 How to use it]{.btn .btn-primary}](docs/how-to.qmd)
+[[Intro]{.btn .btn-info}](docs/introduction.qmd) [[👉 How to use it]{.btn .btn-primary}](docs/how-to.qmd)
