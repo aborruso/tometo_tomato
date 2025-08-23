@@ -180,9 +180,21 @@ See the file [docs/PRD.md](docs/PRD.md) for a detailed description and practical
 
 ## Development
 
+
 ### Running tests
 
-To run the test suite locally, you need to set the `PYTHONPATH` to use the local source code:
+
+**Consigliato:** usa un ambiente virtuale (venv) per isolare le dipendenze:
+
+```bash
+python3 -m venv .venv_test_tometo
+source .venv_test_tometo/bin/activate
+pip install -e .
+pip install pytest
+pytest -v
+```
+
+**Alternativa:** puoi anche eseguire i test senza installare il pacchetto, impostando il `PYTHONPATH`:
 
 ```bash
 # Run all tests
@@ -192,11 +204,9 @@ PYTHONPATH=$(pwd)/src pytest -v
 PYTHONPATH=$(pwd)/src pytest tests/test_read_header.py -v
 ```
 
-Alternatively, you can install the package in editable mode:
-
+Se non hai pytest installato, puoi aggiungerlo con:
 ```bash
-pip install -e .
-pytest -v
+pip install pytest
 ```
 
 ---
