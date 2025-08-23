@@ -1,0 +1,4 @@
+codice_ripartizione_geografica,codice_regione,codice_provincia_storico,codice_provinciauts,codice_comune_alfanumerico,codice_comune_numerico,comune,comune_dizione_italiana,comune_dizione_straniera,ripartizione_geografica,regione,provinciauts,flag_tipo_uts,capoluogo_di_regione,capoluogo_di_provinciauts,sigla_automobilistica,codice_catasto,codice_fiscale,codice_nuts1_2024,codice_nuts2_2024,codice_nuts3_2024
+1,03,017,017,017163,17163,Rodengo Saiano,Rodengo Saiano,NULL,Nord-ovest,Lombardia,Brescia,1,0,0,BS,H477,00632150173,ITC,ITC4,ITC47
+4,18,080,280,080063,80063,Reggio di Calabria,Reggio di Calabria,NULL,Sud,Calabria,Reggio Calabria,3,0,1,RC,H224,00136380805,ITF,ITF6,ITF65
+5,19,082,282,082027,82027,Cefalù,Cefalù,NULL,Isole,Sicilia,Palermo,3,0,0,PA,C421,00110740826,ITG,ITG1,ITG12
