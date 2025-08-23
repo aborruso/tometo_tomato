@@ -43,7 +43,9 @@ Se provassi a fare un join tra i dati errati e questi dati ufficiali, **non otte
 
 Queste sono le nostre due tabelle di esempio, disponibili come [`input.csv`](files/input.csv) e [`ref_sample.csv`](files/ref_sample.csv) in modo che sia possibile scaricarle e provare a eseguire gli esempi.
 
-## Fare il JOIN
+## Utilizzare SQL
+
+### Fare il JOIN
 
 Il primo test è quello di lanciare una semplice query SQL di join, per vedere cosa succede a partire dai nostri dati di esempio.
 
@@ -99,11 +101,11 @@ In output otteniamo un pessimo risultato: nessuna delle righe della tabella di s
 
 
 
-## Fare il JOIN "fuzzy"
+### Fare il JOIN "fuzzy"
 
-Un JOIN "fuzzy", sfumato, è quello che consente di trovare corrispondenze anche quando i valori non sono esattamente uguali, ma "simili". Ad esempio, potremmo voler considerare come corrispondenti i nomi di città che differiscono per un solo carattere, o che hanno una [distanza di Levenshtein](https://duckdb.org/docs/stable/sql/functions/text#levenshteins1-s2) (numero di operazioni necessarie per trasformare una stringa in un'altra) inferiore a una certa soglia.
+Un JOIN "fuzzy", sfumato, è quello che consente di trovare corrispondenze anche quando i valori non sono esattamente uguali, ma "simili". Ad esempio, potremmo voler considerare come corrispondenti i nomi di città che differiscono per un solo carattere, o che hanno una distanza di Levenshtein (numero di operazioni necessarie per trasformare una stringa in un'altra) inferiore a una certa soglia.
 
-Potremmo riscrivere la query di join precedente in questo modo, usando la funzione `levenshtein` di DuckDB per il campo `city` in modo da considererare come corrispondenti i nomi di città che differiscono per al massimo 2 caratteri:
+Potremmo riscrivere la query di join precedente in questo modo, usando la [funzione `levenshtein` di DuckDB](https://duckdb.org/docs/stable/sql/functions/text#levenshteins1-s2) per il campo `city` in modo da considererare come corrispondenti i nomi di città che differiscono per al massimo 2 caratteri:
 
 
 ```sql
@@ -121,7 +123,7 @@ JOIN read_csv_auto('ref_sample.csv') AS r
 ```
 
 | input_city      | input_region | ref_city        | ref_region | city_code | levenshtein_distance |
-|-----------------|-------------|-----------------|------------|-----------|----------------------|
+|-----------------|-------------|-----------------|------------|-----------|----------------------:|
 | Cefalu'         | Sicilia     | Cefalù          | Sicilia    | 082027    | 2                    |
 : Risultato di un join fuzzy tra dati errati e dati ufficiali {.striped .small}
 
@@ -137,7 +139,7 @@ SELECT levenshtein('RODENGO-SAIANO', 'Rodengo Saiano') AS distance;
 
 Se si imposta la soglia a 15 ne otteniamo in ogni caso soltanto 2, perché il JOIN del campo `region` non trova corrispondenza tra `CALABRIA` e `Calabria`. Quindi dovremmo usare una funzione di distanza tra stringhe anche per il campo `region`:
 
-```
+```sql
 SELECT
   i.city AS input_city,
   i.region AS input_region,
@@ -151,13 +153,78 @@ JOIN read_csv_auto('ref_sample.csv') AS r
   AND levenshtein(LOWER(i.region), LOWER(r.region)) < 10
 ```
 
-Ma è l'output non è proprio quello che ci aspettiamo, ovvero le nostre 3 città con i rispettivi codici:
+Ma è l'**output non è** proprio **quello che ci aspettiamo**, non 3 righe in totale (una per ogni Comune), ma **ben 8 righe**:
 
-Cefalu'	Sicilia	Cefalù	Sicilia	082027	2
-Cefalu'	Sicilia	Reggio di Calabria	Calabria	080063	15
-Cefalu'	Sicilia	Rodengo Saiano	Lombardia	017163	12
-Reggio Calabria	CALABRIA	Cefalù	Sicilia	082027	12
-Reggio Calabria	CALABRIA	Reggio di Calabria	Calabria	080063	3
-Reggio Calabria	CALABRIA	Rodengo Saiano	Lombardia	017163	10
-RODENGO-SAIANO	Lombardia	Cefalù	Sicilia	082027	14
-RODENGO-SAIANO	Lombardia	Rodengo Saiano	Lombardia	017163	12
+| input_city      | input_region | ref_city            | ref_region | city_code | levenshtein_distance |
+|-----------------|-------------|---------------------|------------|-----------|----------------------:|
+| Cefalu'         | Sicilia     | Cefalù              | Sicilia    | 082027    | 2                    |
+| Cefalu'         | Sicilia     | Reggio di Calabria  | Calabria   | 080063    | 15                   |
+| Cefalu'         | Sicilia     | Rodengo Saiano      | Lombardia  | 017163    | 12                   |
+| Reggio Calabria | CALABRIA    | Cefalù              | Sicilia    | 082027    | 12                   |
+| Reggio Calabria | CALABRIA    | Reggio di Calabria  | Calabria   | 080063    | 3                    |
+| Reggio Calabria | CALABRIA    | Rodengo Saiano      | Lombardia  | 017163    | 10                   |
+| RODENGO-SAIANO  | Lombardia   | Cefalù              | Sicilia    | 082027    | 14                   |
+| RODENGO-SAIANO  | Lombardia   | Rodengo Saiano      | Lombardia  | 017163    | 12                   |
+: Risultato di un join fuzzy tra dati errati e dati ufficiali {.striped .small}
+
+Quando si esegue un JOIN esatto, l'obiettivo è trovare una singola e chiara corrispondenza per ogni riga. Nel mondo del  "fuzzy matching", le regole cambiano. Abbassando le nostre pretese con soglie di distanza permissive, non stiamo più chiedendo al database "trova l'unica corrispondenza giusta", ma piuttosto:
+
+> Per ogni riga del mio input, trovami tutte le righe nel file di riferimento che soddisfano questi criteri di somiglianza generici.
+
+Se una riga di input è "vagamente simile" a più righe di riferimento, il database creerà una riga di output per ciascuna di queste coincidenze. Questo effetto di moltiplicazione è noto come **prodotto cartesiano** delle coincidenze.
+
+Dopo aver generato le possibili corrispondenze, dovremmo filtrarle per tenere solo la migliore per ogni record di partenza. Il processo può essere suddiviso in tre fasi:
+
+- trovare tutte le possibili corrispondenze e calcolare le distanze
+- assegnare un rango a ciascuna corrispondenza in base alla somma delle distanze
+- selezionare solo la corrispondenza con il rango più alto (cioè la più simile)
+
+
+```sql
+-- Fase 1: trova tutti i candidati e calcola le distanze
+WITH all_matches AS (
+    SELECT
+        i.city AS input_city,
+        i.region AS input_region,
+        r.city AS ref_city,
+        r.region AS ref_region,
+        r.city_code,
+        levenshtein(i.city, r.city) AS city_distance,
+        levenshtein(i.region, r.region) AS region_distance
+    FROM read_csv_auto('input.csv') AS i
+    JOIN read_csv_auto('ref_sample.csv') AS r
+      ON levenshtein(i.city, r.city) <= 15
+     AND levenshtein(i.region, r.region) < 10
+),
+-- Fase 2: assegna un rango ai candidati
+ranked_matches AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY input_city, input_region
+            ORDER BY (city_distance + region_distance) ASC
+        ) AS rn
+    FROM all_matches
+)
+-- Fase 3: prendi solo il miglior candidato (rn = 1)
+SELECT
+    input_city,
+    input_region,
+    ref_city,
+    ref_region,
+    city_code,
+    city_distance,
+    region_distance
+FROM ranked_matches
+WHERE rn = 1;
+```
+
+| input_city      | input_region | ref_city            | ref_region | city_code | city_distance | region_distance |
+|-----------------|-------------|---------------------|------------|-----------|---------------:|----------------:|
+| Cefalu'         | Sicilia     | Cefalù              | Sicilia    | 082027    | 2             | 0              |
+| RODENGO-SAIANO  | Lombardia   | Rodengo Saiano      | Lombardia  | 017163    | 12            | 0              |
+| Reggio Calabria | CALABRIA    | Reggio di Calabria  | Calabria   | 080063    | 3             | 7              |
+: Risultato di un join fuzzy, con selezione della migliore corrispondenza {.striped .small}
+
+
+La query di sopra non è particolarmente efficiente, ma funziona bene per piccoli dataset di poche migliaia di righe. Per dataset più grandi, sarebbe meglio usare tecniche di **blocking** o **indexing** per ridurre il numero di confronti necessari.
