@@ -227,4 +227,25 @@ WHERE rn = 1;
 : Risultato di un join fuzzy, con selezione della migliore corrispondenza {.striped .small}
 
 
-La query di sopra non è particolarmente efficiente, ma funziona bene per piccoli dataset di poche migliaia di righe. Per dataset più grandi, sarebbe meglio usare tecniche di **blocking** o **indexing** per ridurre il numero di confronti necessari.
+### Una sintesi per ridurre le distanze
+
+A seguira una tabellina di riepilogo, sull'esempio del nome del [Comune di `Forza·d'Agrò`](https://www.wikiwand.com/en/articles/Forza_d'Agr%C3%B2), scritto però in modo errato `Forza··D'Agro·`:
+
+- c'è la `D` maiuscola invece che minuscola;
+- ci sono due spazi in eccesso (uno tra `Forza` e `D'Agro` e uno alla fine);
+- non c'è la `o` accentata, ma una `o` normale.
+
+::: {.callout-note}
+**Nota**: qui sopra sono stati resi visibili gli spazi in eccesso con il carattere `·`.
+:::
+
+| Passaggio | Distanza | Confronto | Query SQL Eseguita |
+| :--- | :--- | :--- | :--- |
+| Dati Grezzi | 5 | `Forza··D'Agro·`; `Forza·d'Agrò` | `SELECT levenshtein('Forza  D''Agro ', 'Forza·d''Agrò') AS distance;` |
+| + `LOWER()`, ovvero case insentive | 4 | `forza··d'agro·`; `forza·d'agrò` | `SELECT levenshtein(LOWER('Forza  D''Agro '), LOWER('Forza·d''Agrò')) AS distance;` |
+| + Normalizzazione spazi | 2 | `forza·d'agro`; `forza·d'agrò` | `SELECT levenshtein(regexp_replace(trim(LOWER('Forza  D''Agro ')), '\s+', ' '), regexp_replace(replace(trim(LOWER('Forza·d''Agrò')), '·', ' '), '\s+', ' ')) AS distance;` |
+| + `strip_accents()`, convertendo `ò` in `o` | 0 | `forza·d'agro`; `forza·d'agro` | `SELECT levenshtein(strip_accents(regexp_replace(trim(LOWER('Forza  D''Agro ')), '\s+', ' ')), strip_accents(regexp_replace(replace(trim(LOWER('Forza·d''Agrò')), '·', ' '), '\s+', ' '))) AS distance;` |
+: Riduzione della distanza con passaggi successivi di normalizzazione {.striped .small tbl-colwidths="[20,20,20,40]"}
+
+<br>
+👉 Quindi **un caso molto brutto**, pieno di errori, può essere normalizzato in modo da **ridurre** la **distanza** di Levenshtein a **zero**, e quindi trovare la corrispondenza esatta e `Forza··D'Agro·` è uguale a `Forza·d'Agrò` e quindi riesco a ricavarne il codice identificativo.
