@@ -4,248 +4,72 @@ title: "Come usare Tométo Tomato"
 
 ## Introduzione
 
-Chiunque lavori con i dati molto spesso si imbatte in colonne che dovrebbero rispettare una codifica, un valore standard, una lista di valori noti, ma presentano invece **errori di battitura**, **spazi in eccesso**, **caratteri speciali al posto di caratteri accentati**, **maiuscole/minuscole non coerenti**, ecc..
+`tometo_tomato` è un'utilità a riga di comando progettata per eseguire "fuzzy join" tra due file `CSV`. In altre parole, permette di collegare due tabelle basandosi su colonne i cui valori non sono identici, ma semplicemente "simili", gestendo **errori di battitura**, **abbreviazioni** o **differenze di formattazione**.
 
-Qui sotto ad esempio dei nomi ci città italiane, riportati in modo errato:
+## Il Concetto di Base
 
-| city            | tipo di errore    |
-|-----------------|-------------------|
-| Cefalu'         | bisognerebbe usare la `ù` e non `u'`  |
-| Reggio Calabria | Il nome corretto è `Reggio di Calabria` |
-| RODENGO-SAIANO  | bisognerebbe usare `Rodengo Saiano`, senza `-` e non tutto maiuscolo |
-: Esempi di nomi di città errati {.striped .small tbl-colwidths="[30,70]"}
+L'idea è semplice:
+1.  Hai un **file di input** con dati "sporchi" o incompleti.
+2.  Hai un **file di riferimento** (anagrafica) che contiene i dati "puliti" e corretti.
+3.  Vuoi arricchire il file di input aggiungendo colonne prese dal file di riferimento, trovando le corrispondenze migliori anche quando non sono perfette.
 
-<br>
-Se volessi associare a queste città il codice[^code] che **Istat** - l'istituto nazionale di statistica - assegna a ciascuna città, non potrei farlo con una semplice operazione di join, perché i nomi non corrispondono esattamente. Associare un codice a ciascun comune è operazione molto importante perché mi consente di **unire** dati provenienti da fonti diverse, che altrimenti non potrei confrontare, ma anche di **generare** ad esempio **automaticamente** **mappe**, perché i software spesso usano proprio questi codici per identificare i comuni.
+## I Nostri File di Esempio
 
-[^code]: [Codes of Italian municipalities](https://www.istat.it/en/classification/codes-of-italian-municipalities-provinces-and-regions/)
+Per questa guida, useremo due file:
 
-::: {.callout-tip appearance="simple"}
+**1. File di input (`docs/files/input.csv`)**
 
-## Pay Attention
+Un file con un elenco di comuni e regioni, ma con nomi imprecisi e problemi di case.
 
-Chi fa didattica sui dati di solito infatti dice (urlando): **CODES, NOT LABELS!!**
-
-:::
-
-I codici correlati alle unità amministrative italiane sono pubblici e liberamente accessibili in CC-BY-4.0 su diverse sezioni del sito Istat. Uno di questi è il [SITUAS](https://situas.istat.it), in cui c'è la pagina con l'"[**Elenco dei codici e delle denominazioni delle unità territoriali**](https://situas.istat.it/web/#/territorio/body?id=61&dateFrom=2025-08-23)", scaricabili in formato `CSV` e `JSON`.
-
-| city | region    | istat_city_code |
-|-------------------------|------------|----------------------------|
-| Cefalù                  | Sicilia    | 082027                     |
-| Reggio di Calabria      | Calabria   | 080063                     |
-| Rodengo Saiano          | Lombardia  | 017163                     |
-: Esempio di dati ufficiali Istat sui comuni italiani {.striped .small}
-
-Se provassi a fare un join tra i dati errati e questi dati ufficiali, **non otterrei alcun risultato**.
-
-### File di esempio
-
-Queste sono le nostre due tabelle di esempio, disponibili come [`input.csv`](files/input.csv) e [`ref_sample.csv`](files/ref_sample.csv) in modo che sia possibile scaricarle e provare a eseguire gli esempi.
-
-## Utilizzare SQL
-
-### Fare il JOIN
-
-Il primo test è quello di lanciare una semplice query SQL di join, per vedere cosa succede a partire dai nostri dati di esempio.
-
-:::::: columns
-::: {.column width="46%"}
-| city            | region    |
-|-----------------|-----------|
-| Cefalu'         | Sicilia   |
-| Reggio Calabria | CALABRIA  |
-| RODENGO-SAIANO  | Lombardia |
-
-: The raw data {.striped .small}
-:::
-
-::: {.column width="8%"}
-:::
-
-::: {.column width="46%"}
-| city               | region    | city_code |
-|--------------------|-----------|-----------|
-| Cefalù             | Sicilia   | 082027    |
-| Reggio di Calabria | Calabria  | 080063    |
-| Rodengo Saiano     | Lombardia | 017164    |
-
-: The reference data {.striped .small}
-:::
-::::::
-
-<br>
-La query può essere quella di sotto. È impostata come un `LEFT JOIN`, in modo da mostrare tutte le righe della tabella di sinistra, anche se non trovano corrispondenza nella tabella di destra.
-
-```sql
-SELECT
-  i.*,
-  r.city_code
-FROM read_csv_auto('input.csv') AS i
-LEFT JOIN read_csv_auto('ref_sample.csv') AS r
-  ON i.city = r.city AND i.region = r.region
+```csv
+city,region
+Cefalu',Sicilia
+Reggio Calabria,CALABRIA
+RODENGO-SAIANO,Lombardia
 ```
 
-::: {.callout-note}
-**Nota**: l'uso di `read_csv_auto` nella query di sopra è una funzionalità di [**DuckDB**](https://duckdb.org/) che consente di leggere direttamente file CSV senza doverli importare prima in una tabella. In questo modo è possibile fare esperimenti veloci senza dover creare tabelle temporanee.
-:::
+**2. File di riferimento (`docs/files/ref.csv`)**
 
-In output otteniamo un pessimo risultato: nessuna delle righe della tabella di sinistra trova corrispondenza nella tabella di destra, e quindi il campo `city_code` risulta sempre `NULL`.
+Un'anagrafica pulita che contiene anche il codice ISTAT (`city_code`) che vogliamo aggiungere al nostro file di input.
 
-| city            | region    | istat_city_code |
-|-----------------|-----------|-----------------|
-| Cefalu'         | Sicilia   | NULL            |
-| Reggio Calabria | CALABRIA  | NULL            |
-| RODENGO-SAIANO  | Lombardia | NULL            |
-: Risultato di un join tra dati errati e dati ufficiali {.striped .small}
-
-
-
-### Fare il JOIN "fuzzy"
-
-Un JOIN "fuzzy", sfumato, è quello che consente di trovare corrispondenze anche quando i valori non sono esattamente uguali, ma "simili". Ad esempio, potremmo voler considerare come corrispondenti i nomi di città che differiscono per un solo carattere, o che hanno una distanza di Levenshtein (numero di operazioni necessarie per trasformare una stringa in un'altra) inferiore a una certa soglia.
-
-Potremmo riscrivere la query di join precedente in questo modo, usando la [funzione `levenshtein` di DuckDB](https://duckdb.org/docs/stable/sql/functions/text#levenshteins1-s2) per il campo `city` in modo da considererare come corrispondenti i nomi di città che differiscono per al massimo 2 caratteri:
-
-
-```sql
-SELECT
-  i.city AS input_city,
-  i.region AS input_region,
-  r.city AS ref_city,
-  r.region AS ref_region,
-  r.city_code,
-  levenshtein(i.city, r.city) AS levenshtein_distance
-FROM read_csv_auto('input.csv') AS i
-JOIN read_csv_auto('ref_sample.csv') AS r
-  ON i.region = r.region
-  AND levenshtein(i.city, r.city) <= 2;
+```csv
+city,region,city_code
+Cefalù,Sicilia,082027
+Reggio di Calabria,Calabria,080063
+Rodengo Saiano,Lombardia,017164
 ```
 
-| input_city      | input_region | ref_city        | ref_region | city_code | levenshtein_distance |
-|-----------------|-------------|-----------------|------------|-----------|----------------------:|
-| Cefalu'         | Sicilia     | Cefalù          | Sicilia    | 082027    | 2                    |
-: Risultato di un join fuzzy tra dati errati e dati ufficiali {.striped .small}
+## Uso Fondamentale
 
-L'unica città di cui c'è un risulato è soltanto `Cefalu'`, perché la **distanza** di Levenshtein tra `Cefalu'` e `Cefalù` è **2**: sostituzione di `u'` con `ù` e rimozione di `'`.
-
-Se aumentiamo la soglia a 10, non cambia nulla, perché ad esempio il Comune di `Rodengo Saiano` è scritto in maiuscolo e con il trattino e la distanza tra `RODENGO-SAIANO` e `Rodengo Saiano` è pari a **12**:
+Per collegare questi due file, useremo il seguente comando:
 
 ```bash
-SELECT levenshtein('RODENGO-SAIANO', 'Rodengo Saiano') AS distance;
-
-12
+tometo_tomato docs/files/input.csv docs/files/ref.csv \
+  -j "city,city" \
+  -j "region,region" \
+  -a "city_code" \
+  -s \
+  -o "output/clean_matches.csv"
 ```
 
-Se si imposta la soglia a 15 ne otteniamo in ogni caso soltanto 2, perché il JOIN del campo `region` non trova corrispondenza tra `CALABRIA` e `Calabria`. Quindi dovremmo usare una funzione di distanza tra stringhe anche per il campo `region`:
+Analizziamo il comando pezzo per pezzo:
 
-```sql
-SELECT
-  i.city AS input_city,
-  i.region AS input_region,
-  r.city AS ref_city,
-  r.region AS ref_region,
-  r.city_code,
-  levenshtein(i.city, r.city) AS levenshtein_distance
-FROM read_csv_auto('input.csv') AS i
-JOIN read_csv_auto('ref_sample.csv') AS r
-  ON levenshtein(i.city, r.city) <= 15
-  AND levenshtein(LOWER(i.region), LOWER(r.region)) < 10
-```
+-   **`tometo_tomato docs/files/input.csv docs/files/ref.csv`**: Indichiamo il programma da eseguire, seguito dal file di input e da quello di riferimento.
+-   **`-j "city,city"`**: Specifichiamo la prima coppia di colonne da usare per il join. In questo caso i nomi delle colonne sono identici.
+-   **`-j "region,region"`**: Specifichiamo la seconda coppia di colonne. Il programma calcolerà un punteggio di somiglianza medio basato su tutte le coppie fornite.
+-   **`-a "city_code"`**: Indichiamo quale colonna del file di riferimento (`ref.csv`) vogliamo **aggiungere** al nostro file di output.
+-   **`-s`**: Chiediamo di includere anche una colonna con il punteggio di somiglianza (`avg_score`) nell'output.
+-   **`-o "output/clean_matches.csv"`**: Specifichiamo il percorso del file CSV di output in cui salvare i risultati.
 
-Ma è l'**output non è** proprio **quello che ci aspettiamo**, non 3 righe in totale (una per ogni Comune), ma **ben 8 righe**:
+## Il Risultato
 
-| input_city      | input_region | ref_city            | ref_region | city_code | levenshtein_distance |
-|-----------------|-------------|---------------------|------------|-----------|----------------------:|
-| Cefalu'         | Sicilia     | Cefalù              | Sicilia    | 082027    | 2                    |
-| Cefalu'         | Sicilia     | Reggio di Calabria  | Calabria   | 080063    | 15                   |
-| Cefalu'         | Sicilia     | Rodengo Saiano      | Lombardia  | 017163    | 12                   |
-| Reggio Calabria | CALABRIA    | Cefalù              | Sicilia    | 082027    | 12                   |
-| Reggio Calabria | CALABRIA    | Reggio di Calabria  | Calabria   | 080063    | 3                    |
-| Reggio Calabria | CALABRIA    | Rodengo Saiano      | Lombardia  | 017163    | 10                   |
-| RODENGO-SAIANO  | Lombardia   | Cefalù              | Sicilia    | 082027    | 14                   |
-| RODENGO-SAIANO  | Lombardia   | Rodengo Saiano      | Lombardia  | 017163    | 12                   |
-: Risultato di un join fuzzy tra dati errati e dati ufficiali {.striped .small}
+Dopo aver eseguito il comando, il file `output/clean_matches.csv` conterrà i dati del file di input, arricchiti con le colonne del file di riferimento per le righe che hanno trovato una corrispondenza con un punteggio sufficientemente alto. Ad esempio, la riga `RODENGO-SAIANO,Lombardia` verrà collegata a `Rodengo Saiano,Lombardia`, e il `city_code` `017164` verrà aggiunto alla riga di output.
 
-Quando si esegue un JOIN esatto, l'obiettivo è trovare una singola e chiara corrispondenza per ogni riga. Nel mondo del  "fuzzy matching", le regole cambiano. Abbassando le nostre pretese con soglie di distanza permissive, non stiamo più chiedendo al database "trova l'unica corrispondenza giusta", ma piuttosto:
+## Opzioni Avanzate Utili
 
-> Per ogni riga del mio input, trovami tutte le righe nel file di riferimento che soddisfano questi criteri di somiglianza generici.
+L'utilità offre molte altre opzioni per personalizzare il processo:
 
-Se una riga di input è "vagamente simile" a più righe di riferimento, il database creerà una riga di output per ciascuna di queste coincidenze. Questo effetto di moltiplicazione è noto come **prodotto cartesiano** delle coincidenze.
-
-Dopo aver generato le possibili corrispondenze, dovremmo filtrarle per tenere solo la migliore per ogni record di partenza. Il processo può essere suddiviso in tre fasi:
-
-- trovare tutte le possibili corrispondenze e calcolare le distanze
-- assegnare un rango a ciascuna corrispondenza in base alla somma delle distanze
-- selezionare solo la corrispondenza con il rango più alto (cioè la più simile)
-
-
-```sql
--- Fase 1: trova tutti i candidati e calcola le distanze
-WITH all_matches AS (
-    SELECT
-        i.city AS input_city,
-        i.region AS input_region,
-        r.city AS ref_city,
-        r.region AS ref_region,
-        r.city_code,
-        levenshtein(i.city, r.city) AS city_distance,
-        levenshtein(i.region, r.region) AS region_distance
-    FROM read_csv_auto('input.csv') AS i
-    JOIN read_csv_auto('ref_sample.csv') AS r
-      ON levenshtein(i.city, r.city) <= 15
-     AND levenshtein(i.region, r.region) < 10
-),
--- Fase 2: assegna un rango ai candidati
-ranked_matches AS (
-    SELECT
-        *,
-        ROW_NUMBER() OVER (
-            PARTITION BY input_city, input_region
-            ORDER BY (city_distance + region_distance) ASC
-        ) AS rn
-    FROM all_matches
-)
--- Fase 3: prendi solo il miglior candidato (rn = 1)
-SELECT
-    input_city,
-    input_region,
-    ref_city,
-    ref_region,
-    city_code,
-    city_distance,
-    region_distance
-FROM ranked_matches
-WHERE rn = 1;
-```
-
-| input_city      | input_region | ref_city            | ref_region | city_code | city_distance | region_distance |
-|-----------------|-------------|---------------------|------------|-----------|---------------:|----------------:|
-| Cefalu'         | Sicilia     | Cefalù              | Sicilia    | 082027    | 2             | 0              |
-| RODENGO-SAIANO  | Lombardia   | Rodengo Saiano      | Lombardia  | 017163    | 12            | 0              |
-| Reggio Calabria | CALABRIA    | Reggio di Calabria  | Calabria   | 080063    | 3             | 7              |
-: Risultato di un join fuzzy, con selezione della migliore corrispondenza {.striped .small}
-
-
-### Una sintesi per ridurre le distanze
-
-A seguira una tabellina di riepilogo, sull'esempio del nome del [Comune di `Forza·d'Agrò`](https://www.wikiwand.com/en/articles/Forza_d'Agr%C3%B2), scritto però in modo errato `Forza··D'Agro·`:
-
-- c'è la `D` maiuscola invece che minuscola;
-- ci sono due spazi in eccesso (uno tra `Forza` e `D'Agro` e uno alla fine);
-- non c'è la `o` accentata, ma una `o` normale.
-
-::: {.callout-note}
-**Nota**: qui sopra sono stati resi visibili gli spazi in eccesso con il carattere `·`.
-:::
-
-| Passaggio | Distanza | Confronto | Query SQL Eseguita |
-| :--- | :--- | :--- | :--- |
-| Dati Grezzi | 5 | `Forza··D'Agro·`; `Forza·d'Agrò` | `SELECT levenshtein('Forza  D''Agro ', 'Forza·d''Agrò') AS distance;` |
-| + `LOWER()`, ovvero case insentive | 4 | `forza··d'agro·`; `forza·d'agrò` | `SELECT levenshtein(LOWER('Forza  D''Agro '), LOWER('Forza·d''Agrò')) AS distance;` |
-| + Normalizzazione spazi | 2 | `forza·d'agro`; `forza·d'agrò` | `SELECT levenshtein(regexp_replace(trim(LOWER('Forza  D''Agro ')), '\s+', ' '), regexp_replace(replace(trim(LOWER('Forza·d''Agrò')), '·', ' '), '\s+', ' ')) AS distance;` |
-| + `strip_accents()`, convertendo `ò` in `o` | 0 | `forza·d'agro`; `forza·d'agro` | `SELECT levenshtein(strip_accents(regexp_replace(trim(LOWER('Forza  D''Agro ')), '\s+', ' ')), strip_accents(regexp_replace(replace(trim(LOWER('Forza·d''Agrò')), '·', ' '), '\s+', ' '))) AS distance;` |
-: Riduzione della distanza con passaggi successivi di normalizzazione {.striped .small tbl-colwidths="[20,20,20,40]"}
-
-<br>
-👉 Quindi **un caso molto brutto**, pieno di errori, può essere normalizzato in modo da **ridurre** la **distanza** di Levenshtein a **zero**, e quindi trovare la corrispondenza esatta e `Forza··D'Agro·` è uguale a `Forza·d'Agrò` e quindi riesco a ricavarne il codice identificativo.
+-   **`--threshold` o `-t`**: Permette di modificare la soglia di somiglianza minima (default: 85) per considerare una corrispondenza valida.
+-   **`--infer-pairs`**: Tenta di indovinare automaticamente le coppie di colonne da usare per il join, basandosi sulla somiglianza dei nomi delle colonne.
+-   **`--latinize`**: Normalizza i caratteri, rimuovendo accenti e simboli speciali prima del confronto, come abbiamo visto nei nostri esempi con `strip_accents`.
+-   **`--raw-case` e `--raw-whitespace`**: Disabilitano la normalizzazione di maiuscole/minuscole e degli spazi, per un controllo più fine.
