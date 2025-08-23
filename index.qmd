@@ -8,7 +8,42 @@ title: "Welcome to Tométo Tomato"
 
 Leveraging **DuckDB** and **rapidfuzz**, Tométo Tomato makes cleaning and merging your data fast, flexible, and reliable.
 
-**Unlock the true potential of your data. Get started now!**
+Unlock the true potential of your data. Get started now!
 
+**Let's Call the Whole Thing Off!!**
 
-Let's Call the Whole Thing Off!!
+:::::: columns
+::: {.column width="46%"}
+| city            | region    |
+|-----------------|-----------|
+| Cefalu'         | Sicilia   |
+| Reggio Calabria | CALABRIA  |
+| RODENGO-SAIANO  | Lombardia |
+
+: The raw data {.striped .small}
+:::
+
+::: {.column width="8%"}
+:::
+
+::: {.column width="46%"}
+| city               | region    | city_code |
+|--------------------|-----------|-----------|
+| Cefalù             | Sicilia   | 082027    |
+| Reggio di Calabria | Calabria  | 080063    |
+| Rodengo Saiano     | Lombardia | 017164    |
+
+: The reference data {.striped .small}
+:::
+::::::
+
+| city (input) | region (input) | city (ref) | region (ref) | city_code | avg_score |
+|------------|------------|------------|------------|------------|-----------:|
+| Cefalu' | Sicilia | Cefalù | Sicilia | 082027 | 100.0 |
+| RODENGO-SAIANO | Lombardia | Rodengo Saiano | Lombardia | 017164 | 98.14 |
+| Reggio Calabria | CALABRIA | Reggio di Calabria | Calabria | 080063 | 95.45 |
+
+: Example fuzzy join result {.striped .small}
+
+<br>
+[[👉 How to use it]{.btn .btn-primary}](docs/how-to.qmd)
