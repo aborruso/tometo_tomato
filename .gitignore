@@ -38,3 +38,4 @@ tmp_csvs/
 
 # Temporary outputs
 tmp*.csv
+tmp/
