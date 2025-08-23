@@ -1,0 +1,62 @@
+---
+title: "Installazione"
+---
+
+Questo documento spiega come installare il tool `tometo_tomato` sul tuo sistema.
+
+## Prerequisiti
+
+Assicurati di avere installato [Python](https://www.python.org/) (versione 3.8 o superiore).
+Per una gestione efficiente dei pacchetti, raccomandiamo l'uso di [uv](https://astral.sh/uv), un tool moderno e veloce.
+
+## Metodo 1: Installazione per Sviluppo (da sorgente)
+
+Questo metodo è ideale se intendi contribuire al progetto o modificarne il codice.
+
+1.  **Clona il repository:**
+    ```bash
+    git clone https://github.com/aborruso/tometo_tomato.git
+    ```
+
+2.  **Naviga nella directory del progetto:**
+    ```bash
+    cd tometo_tomato
+    ```
+
+3.  **Installa le dipendenze:**
+
+    *   **Con `uv` (raccomandato):**
+        ```bash
+        uv pip install -e .
+        ```
+        Questo installerà il pacchetto in modalità "editabile", permettendoti di vedere immediatamente le modifiche al codice senza dover reinstallare.
+
+    *   **Con `pip`:**
+        ```bash
+        pip install -e .
+        ```
+
+    Se non intendi modificare il codice, puoi omettere il flag `-e`:
+    *   `uv pip install .`
+    *   `pip install .`
+
+## Metodo 2: Installazione come Tool Globale (con `uv tool install`)
+
+Se vuoi semplicemente usare `tometo_tomato` come un comando da riga di comando senza preoccuparti della gestione del codice sorgente o degli ambienti virtuali, `uv tool install` è la soluzione più pulita.
+
+1.  **Assicurati di avere `uv` installato.**
+2.  **Installa il tool:**
+    ```bash
+    uv tool install tometo_tomato
+    ```
+    Questo comando installerà `tometo_tomato` in un ambiente isolato gestito da `uv` e lo renderà disponibile nel tuo PATH.
+
+## Verifica dell'Installazione
+
+Dopo aver completato uno dei metodi di installazione, puoi verificare che `tometo_tomato` sia correttamente installato eseguendo:
+
+```bash
+tometo_tomato --version
+```
+
+Dovresti vedere la versione del tool stampata a schermo.
