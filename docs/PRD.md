@@ -52,8 +52,18 @@ The procedure supports joining based on multiple column pairs. If not specified,
 ### FR6: Output Structure
 
 The procedure produces two main outputs:
-1.  **Clean Join Table**: A file with records that found a unique match above the threshold.
-2.  **Ambiguity Log File**: A file with records discarded due to the reasons described in FR5.
+
+1. **Clean Join Table**: A file with all records from the input table (left join behavior). Records that found a unique match above the threshold will have the corresponding reference data populated; records without a match will have the reference fields empty/null.
+2. **Ambiguity Log File**: A file with records discarded due to the reasons described in FR5.
+
+### FR7: Left Join Behavior
+
+The system implements a **left join** approach:
+
+- **ALL records from the input table are included** in the clean output, regardless of whether they found a match or not.
+- Records that found a valid match (score >= threshold and unambiguous) will have the reference data populated.
+- Records that did not find any match or found only matches below the threshold will have the reference fields empty/null.
+- This allows users to study and analyze which records were not successfully joined.
 
 ## Non-Functional Requirements
 
@@ -126,11 +136,13 @@ This use case demonstrates the association of ISTAT codes with an unofficial reg
   tometo_tomato input.csv ref.csv --add-field municipality_code --threshold 90 --show-score
   ```
 
-  The process identifies the best match for each row in `input.csv` within `ref.csv` and associates the corresponding `municipality_code`.
+  The process identifies the best match for each row in `input.csv` within `ref.csv` and associates the corresponding `municipality_code`. **All input records are included** in the output (left join behavior).
 
   Example of expected matches:
-  - `input.csv` (Reggio Calabr, Calabria) -> `ref.csv` (Reggio Calabria, Calabria) with `municipality_code` 80065.
-  - `input.csv` (Torinoo, Piedmont) -> `ref.csv` (Turin, Piedmont) with `municipality_code` 001272.
-  - `input.csv` (Rma, Lazio) -> `ref.csv` (Rome, Lazio) with `municipality_code` 058091.
 
-  The final result is a table with the columns from `input.csv` plus the associated `municipality_code`.
+- `input.csv` (Reggio Calabr, Calabria) -> `ref.csv` (Reggio Calabria, Calabria) with `municipality_code` 80065.
+- `input.csv` (Torinoo, Piedmont) -> `ref.csv` (Turin, Piedmont) with `municipality_code` 001272.
+- `input.csv` (Rma, Lazio) -> `ref.csv` (Rome, Lazio) with `municipality_code` 058091.
+- Records with no match or low similarity scores will have empty/null values for `municipality_code` but will still appear in the output.
+
+  The final result is a table with all rows from `input.csv` plus the associated `municipality_code` (populated only for successful matches).
