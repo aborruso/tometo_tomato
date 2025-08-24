@@ -65,6 +65,7 @@ def parse_args():
         epilog=(
             "Example:\n"
             "  tometo_tomato input.csv ref.csv -j \"col1,col_ref1\" -j \"col2,col_ref2\" -a \"field_to_add1\" -a \"field_to_add2\" -o \"output_clean.csv\"\n"
+            "  tometo_tomato input.csv ref.csv -j \"name,ref_name\" --keep-alphanumeric -o clean_output.csv\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -87,6 +88,7 @@ def parse_args():
     parser.add_argument("--raw-whitespace", action="store_true", help="Disable whitespace normalization (no trimming or space reduction)")
     parser.add_argument("--raw-case", action="store_true", help="Enable case sensitive comparison (do not convert to lower-case)")
     parser.add_argument("--latinize", action="store_true", help="Normalize/latinize accented and special characters before matching")
+    parser.add_argument("--keep-alphanumeric", "-k", action="store_true", help="Keep only alphanumeric characters and spaces in join columns (removes punctuation and special characters)")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Increase verbosity (e.g., -v, -vv)")
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress all output except errors")
     parser.add_argument("--force", "-f", action="store_true", help="Overwrite existing output files without prompting")
@@ -454,6 +456,8 @@ def main():
             expr = f"trim(regexp_replace({expr}, '\\s+', ' ', 'g'))"
         if args.latinize:
             expr = f"strip_accents({expr})"
+        if args.keep_alphanumeric:
+            expr = f"regexp_replace({expr}, '[^a-zA-Z0-9 ]', '', 'g')"
         if not args.raw_case:
             expr = f"lower({expr})"
         return expr
