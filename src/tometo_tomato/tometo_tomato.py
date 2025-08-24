@@ -196,7 +196,13 @@ def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
         return False
 
 
-def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str, preprocessed: bool = False) -> str:
+def choose_score_expr(
+    using_rapidfuzz: bool,
+    join_pairs: List[str],
+    scorer: str,
+    args,
+    preprocessed: bool = False,
+) -> str:
     import re
 
     # Fast-path: columns have already been normalised into *_clean aliases.
@@ -222,43 +228,20 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
                 )
         return " + ".join(exprs)
 
-    def clean_column_expr(table_alias: str, column: str) -> str:
+    def clean_column_expr(table_alias: str, column: str, args) -> str:
         """Generate column expression with default whitespace cleaning unless --raw-whitespace is set."""
         base_expr = f'{table_alias}."{column}"'
-        # Retrieve the flags
-        args_obj = getattr(sys.modules['__main__'], 'args', None)
-        if args_obj is None:
-            import inspect
-            frame = inspect.currentframe()
-            while frame:
-                if 'args' in frame.f_locals:
-                    args_obj = frame.f_locals['args']
-                    break
-                frame = frame.f_back
-        raw_whitespace_flag = getattr(args_obj, 'raw_whitespace', False)
-        latinize_flag = getattr(args_obj, 'latinize', False)
-
         expr = base_expr
-        if not raw_whitespace_flag:
+        if not args.raw_whitespace:
             expr = f"trim(regexp_replace({expr}, '\\s+', ' ', 'g'))"
-        if latinize_flag:
+        if args.latinize:
             expr = f"strip_accents({expr})"
         return expr
 
     exprs = []
 
     # Determine if case sensitive (raw) or not
-    case_sensitive = getattr(sys.modules['__main__'], 'args', None)
-    if case_sensitive is None:
-        # fallback: try to get from caller
-        import inspect
-        frame = inspect.currentframe()
-        while frame:
-            if 'args' in frame.f_locals:
-                case_sensitive = frame.f_locals['args']
-                break
-            frame = frame.f_back
-    raw_case = getattr(case_sensitive, 'raw_case', False)
+    raw_case = getattr(args, "raw_case", False)
 
     def maybe_lower(expr):
         return expr if raw_case else f"LOWER({expr})"
@@ -275,8 +258,8 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
             inp = inp.replace('"', '').replace("'", '').strip()
             ref = ref.replace('"', '').replace("'", '').strip()
 
-            inp_expr = clean_column_expr("inp", inp)
-            ref_expr = clean_column_expr("ref", ref)
+            inp_expr = clean_column_expr("inp", inp, args)
+            ref_expr = clean_column_expr("ref", ref, args)
 
             exprs.append(f"{score_func}({maybe_lower(ref_expr)}, {maybe_lower(inp_expr)})")
     else:
@@ -290,8 +273,8 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
             inp = inp.replace('"', '').replace("'", '').strip()
             ref = ref.replace('"', '').replace("'", '').strip()
 
-            inp_expr = clean_column_expr("inp", inp)
-            ref_expr = clean_column_expr("ref", ref)
+            inp_expr = clean_column_expr("inp", inp, args)
+            ref_expr = clean_column_expr("ref", ref, args)
 
             # we will build an expression that computes: (1 - levenshtein/NULLIF(GREATEST(LENGTH(a), LENGTH(b)),0)) * 100
             expr = (
@@ -420,11 +403,11 @@ def main():
 
     using_rapidfuzz = try_load_rapidfuzz(con)
     if using_rapidfuzz:
-        score_expr_base = choose_score_expr(True, join_pairs, args.scorer, True)
+        score_expr_base = choose_score_expr(True, join_pairs, args.scorer, args, True)
     else:
         try:
             con.execute("SELECT levenshtein('a','b')")
-            score_expr_base = choose_score_expr(False, join_pairs, args.scorer, True)
+            score_expr_base = choose_score_expr(False, join_pairs, args.scorer, args, True)
         except Exception:
             try:
                 con.execute("SELECT damerau_levenshtein('a','b')")
