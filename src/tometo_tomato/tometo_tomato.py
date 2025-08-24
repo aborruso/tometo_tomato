@@ -231,7 +231,7 @@ def choose_score_expr(
                 exprs.append(
                     f"(1.0 - CAST(levenshtein(ref.\"{ref_col}_clean\", inp.\"{inp_col}_clean\") AS DOUBLE) "
                     f"/ NULLIF(GREATEST(LENGTH(ref.\"{ref_col}_clean\"), LENGTH(inp.\"{inp_col}_clean\")),0)) * 100"
-                )
+    def clean_column_expr(table_alias: str, column: str, args: "argparse.Namespace") -> str:
         return " + ".join(exprs)
 
     def clean_column_expr(table_alias: str, column: str, args) -> str:
