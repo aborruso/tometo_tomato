@@ -199,7 +199,13 @@ def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
 def choose_score_expr(
     using_rapidfuzz: bool,
     join_pairs: List[str],
+def choose_score_expr(
+    using_rapidfuzz: bool,
+    join_pairs: List[str],
     scorer: str,
+    args: "argparse.Namespace",
+    preprocessed: bool = False,
+) -> str:
     args,
     preprocessed: bool = False,
 ) -> str:
