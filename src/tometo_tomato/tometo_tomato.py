@@ -97,14 +97,14 @@ def read_header(path: str) -> List[str]:
     con = duckdb.connect(database=":memory:")
     safe_path = path.replace("'", "''")
 
-    # Usa la stessa query di test_csv_reading.py che funziona correttamente
+    # Use the same query from test_csv_reading.py that works correctly
     q = f"SELECT * FROM read_csv_auto('{safe_path}', header=true, all_varchar=true)"
     res = con.execute(q)
 
     desc = getattr(res, 'description', None)
     if desc:
         return [c[0] for c in desc]
-    # Se DuckDB non popola description, provo con LIMIT 0 che forza sempre la popolazione di description
+    # If DuckDB doesn't populate description, try with LIMIT 0 which always forces description population
     try:
         q_limit = f"SELECT * FROM read_csv_auto('{safe_path}', header=true, all_varchar=true) LIMIT 0"
         res_limit = con.execute(q_limit)
@@ -223,7 +223,7 @@ def choose_score_expr(using_rapidfuzz: bool, join_pairs: List[str], scorer: str,
     def clean_column_expr(table_alias: str, column: str) -> str:
         """Generate column expression with default whitespace cleaning unless --raw-whitespace is set."""
         base_expr = f'{table_alias}."{column}"'
-        # Recupera i flag
+        # Retrieve the flags
         args_obj = getattr(sys.modules['__main__'], 'args', None)
         if args_obj is None:
             import inspect
@@ -342,12 +342,12 @@ def main():
         def latinize_udf(text):
             if text is None:
                 return None
-            # Usa la funzione DuckDB strip_accents()
-            # Se chiamata come UDF Python, richiama la funzione SQL
-            # Ma qui, per efficienza, la UDF Python richiama la funzione DuckDB via SQL
-            # oppure, se DuckDB la supporta direttamente, si può usare in SQL
-            # Qui la UDF Python è un pass-through, la logica è in SQL
-            return text  # Nessuna modifica, la logica è in SQL con strip_accents()
+            # Use the DuckDB strip_accents() function
+            # If called as Python UDF, it calls the SQL function
+            # But here, for efficiency, the Python UDF calls the DuckDB function via SQL
+            # or, if DuckDB supports it directly, it can be used in SQL
+            # Here the Python UDF is a pass-through, the logic is in SQL with strip_accents()
+            return text  # No modification, the logic is in SQL with strip_accents()
         try:
             con.create_function("latinize_udf", latinize_udf, ['VARCHAR'], 'VARCHAR')
         except Exception as e:
