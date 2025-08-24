@@ -65,6 +65,7 @@ Analizziamo il comando pezzo per pezzo:
 
 Dopo aver eseguito il comando, il file `output/clean_matches.csv` conterrà i dati del file di input, arricchiti con le colonne del file di riferimento per le righe che hanno trovato una corrispondenza con un punteggio sufficientemente alto. Ad esempio, la riga `RODENGO-SAIANO,Lombardia` verrà collegata a `Rodengo Saiano,Lombardia`, e il `city_code` `017164` verrà aggiunto alla riga di output.
 
+
 ## Opzioni Avanzate Utili
 
 L'utilità offre molte altre opzioni per personalizzare il processo:
@@ -72,6 +73,16 @@ L'utilità offre molte altre opzioni per personalizzare il processo:
 -   **`--threshold` o `-t`**: Permette di modificare la soglia di somiglianza minima (default: 85) per considerare una corrispondenza valida.
 -   **`--infer-pairs`**: Tenta di indovinare automaticamente le coppie di colonne da usare per il join, basandosi sulla somiglianza dei nomi delle colonne.
 -   **`--latinize`**: Normalizza i caratteri, rimuovendo accenti e simboli speciali prima del confronto, come abbiamo visto nei nostri esempi con `strip_accents`.
+-   **`--keep-alphanumeric` o `-k`**: Mantiene solo lettere, numeri e spazi nelle colonne di join, rimuovendo punteggiatura e caratteri speciali. Utile per dati con apostrofi, trattini, punti, ecc.
+
+  Esempio:
+  ```bash
+  tometo_tomato input.csv ref.csv -j "name,ref_name" --keep-alphanumeric -o output.csv
+  # oppure versione breve
+  tometo_tomato input.csv ref.csv -j "name,ref_name" -k -o output.csv
+  ```
+  Questo permette di far corrispondere, ad esempio, `John O'Connor` con `John OConnor`, oppure `Anna & Co.` con `Anna Co`.
+
 -   **`--raw-case` e `--raw-whitespace`**: Disabilitano la normalizzazione di maiuscole/minuscole e degli spazi, per un controllo più fine.
 
 ## Ambiguità e comportamento degli output
