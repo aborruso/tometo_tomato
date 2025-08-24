@@ -325,6 +325,19 @@ def main():
         logging.error("No join pair found. Exiting.")
         sys.exit(1)
 
+    # Verify that join pair columns exist in the actual datasets
+    input_cols = read_header(args.input_file)
+    ref_cols = read_header(args.reference_file)
+
+    for pair in join_pairs:
+        inp_col, ref_col = [c.strip().replace('"', '').replace("'", "") for c in pair.split(",")]
+        if inp_col not in input_cols:
+            logging.error(f"Column '{inp_col}' not found in input file. Available columns: {', '.join(input_cols)}")
+            sys.exit(1)
+        if ref_col not in ref_cols:
+            logging.error(f"Column '{ref_col}' not found in reference file. Available columns: {', '.join(ref_cols)}")
+            sys.exit(1)
+
 
 
     # prepare select clauses
@@ -335,22 +348,29 @@ def main():
 
     select_clean_cols, select_ambiguous_cols, selected_input_cols_list = prepare_select_clauses(join_pairs, add_fields, args.show_score)
 
-    # Patch: per l'output ambiguo, costruisco una lista di colonne senza prefissi ref_
-    # e uso solo i nomi originali delle colonne di input e ref
+    # For ambiguous output, use actual column names from the datasets
+    # Get all columns from input that are used in joins (using real column names)
+    actual_input_cols_used = []
+    for pair in join_pairs:
+        inp_col = pair.split(",")[0].strip().replace('"', '').replace("'", "")
+        actual_input_cols_used.append(inp_col)
+    actual_input_cols_used = list(set(actual_input_cols_used))  # Remove duplicates
+
+    # Build ambiguous output column list with actual column names
     ambiguous_cols_list = []
-    # Colonne di input
-    for col in selected_input_cols_list:
-        ambiguous_cols_list.append(f'"{col}"')
-    # Colonne di ref usate per il join
+    # Input columns used in joins (prefix with inp.)
+    for col in actual_input_cols_used:
+        ambiguous_cols_list.append(f'inp."{col}"')
+    # Reference columns used in joins (prefix with s.)
     for pair in join_pairs:
         ref_col = pair.split(",")[1].strip().replace('"', '').replace("'", "")
-        ambiguous_cols_list.append(f'"{ref_col}"')
-    # Campi aggiuntivi
+        ambiguous_cols_list.append(f's."{ref_col}"')
+    # Additional fields (prefix with s.)
     if add_fields:
         for f in add_fields:
-            ambiguous_cols_list.append(f'"{f}"')
+            ambiguous_cols_list.append(f's."{f}"')
     if args.show_score:
-        ambiguous_cols_list.append('avg_score')
+        ambiguous_cols_list.append('s.avg_score')
     select_ambiguous_cols_fixed = ', '.join(ambiguous_cols_list)
 
     con = duckdb.connect(database=":memory:")
@@ -495,7 +515,7 @@ def main():
         WHERE avg_score >= {args.threshold};
     """)
 
-    # Build DuckDB SQL for clean output
+    # Build DuckDB SQL for clean output (LEFT JOIN behavior - include ALL input records)
     sql_clean = f"""
 COPY (
     WITH max_scores AS (
@@ -518,7 +538,7 @@ COPY (
     )
     SELECT DISTINCT {select_clean_cols}
     FROM input_with_id inp
-    JOIN clean_best_matches bst ON inp.input_id = bst.input_id
+    LEFT JOIN clean_best_matches bst ON inp.input_id = bst.input_id
 ) TO '{args.output_clean}' (HEADER, DELIMITER ',');
 """
 
@@ -529,7 +549,7 @@ COPY (
 
     con.execute(sql_clean)
 
-    # Check for ambiguous records even if --output-ambiguous is not specified
+    # Check for ambiguous records before creating the ambiguous file
     ambiguous_count_result = con.execute(f"""
         WITH max_scores AS (
             SELECT input_id, MAX(avg_score) as max_score
@@ -548,8 +568,8 @@ COPY (
     """)
     ambiguous_count = ambiguous_count_result.fetchone()[0]
 
-    if args.output_ambiguous:
-        # Check for file overwrite before writing ambiguous output
+    if args.output_ambiguous and ambiguous_count > 0:
+        # Only check for file overwrite if there are actually ambiguous records
         if not check_file_overwrite(args.output_ambiguous, args.force):
             logging.error("Operation cancelled: will not overwrite existing ambiguous file.")
             sys.exit(1)
@@ -572,31 +592,24 @@ COPY (
     )
     SELECT DISTINCT {select_ambiguous_cols_fixed}
     FROM all_scores s
+    JOIN input_with_id inp ON s.input_id = inp.input_id
     WHERE s.input_id IN (SELECT input_id FROM ambiguous_inputs)
        AND s.avg_score >= {args.threshold}
 ) TO '{args.output_ambiguous}' (HEADER, DELIMITER ',');
 """
 
         con.execute(sql_amb)
-
-        ambiguous_file_saved = False
-        # post-process ambiguous file: delete if only header
-        if os.path.exists(args.output_ambiguous):
-            with open(args.output_ambiguous, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            if len(lines) <= 1:
-                logging.info("No ambiguous records found.")
-            else:
-                ambiguous_file_saved = True
-                logging.warning(f"Ambiguous records found! Check file: {args.output_ambiguous}")
-    else:
+        logging.warning(f"Ambiguous records found! Check file: {args.output_ambiguous}")
+    elif args.output_ambiguous and ambiguous_count == 0:
+        # Don't create ambiguous file if no ambiguous records exist
+        logging.info("No ambiguous records found.")
+    elif ambiguous_count > 0:
         # Warn about ambiguous records even when no output file is specified
-        if ambiguous_count > 0:
-            logging.warning(f"Ambiguous records found! Use --output-ambiguous filename.csv to see which records are ambiguous")
+        logging.warning(f"Ambiguous records found! Use --output-ambiguous filename.csv to see which records are ambiguous")
 
     logging.info("Fuzzy join complete.")
     logging.info(f"- Clean matches saved to: {args.output_clean}")
-    if args.output_ambiguous and ambiguous_file_saved:
+    if args.output_ambiguous and ambiguous_count > 0:
         logging.info(f"- Ambiguous matches saved to: {args.output_ambiguous}")
 
 
