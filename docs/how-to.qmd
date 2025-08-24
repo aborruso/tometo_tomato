@@ -73,3 +73,14 @@ L'utilità offre molte altre opzioni per personalizzare il processo:
 -   **`--infer-pairs`**: Tenta di indovinare automaticamente le coppie di colonne da usare per il join, basandosi sulla somiglianza dei nomi delle colonne.
 -   **`--latinize`**: Normalizza i caratteri, rimuovendo accenti e simboli speciali prima del confronto, come abbiamo visto nei nostri esempi con `strip_accents`.
 -   **`--raw-case` e `--raw-whitespace`**: Disabilitano la normalizzazione di maiuscole/minuscole e degli spazi, per un controllo più fine.
+
+## Ambiguità e comportamento degli output
+
+Lo strumento segnala e gestisce in modo esplicito i casi ambigui per evitare di inserire dati potenzialmente errati nell'output "pulito".
+
+- Definizione di ambiguità: una riga di input è considerata "ambigua" quando due o più righe del file di riferimento ottengono lo stesso punteggio massimo medio (`avg_score`) per quell'input, e tale punteggio soddisfa la soglia `--threshold`.
+- Comportamento: le righe ambigue NON vengono incluse nell'`--output-clean`. In questo modo il file "pulito" contiene solo corrispondenze non ambigue (una sola migliore corrispondenza con punteggio >= soglia).
+- Esportazione ambigui: per salvare le righe candidate ambigue, usare l'opzione `--output-ambiguous ambiguous.csv`. Il file conterrà le righe di riferimento che hanno ottenuto il punteggio massimo (uguale) per ciascun input ambiguo.
+- Avviso: lo strumento rileva sempre la presenza di record ambigui e mostra un avviso quando ne trova uno; l'avviso suggerisce di usare `--output-ambiguous` per salvare i dettagli.
+
+Esempio: se per l'input `"Reggio Calabria"` due righe di riferimento diverse ottengono entrambe `95.45` e la soglia è `85`, l'input risulterà ambiguo, non comparirà in `--output-clean` e potrai ispezionare entrambe le righe candidate con `--output-ambiguous`.

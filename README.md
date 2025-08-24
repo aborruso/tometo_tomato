@@ -155,14 +155,14 @@ tometo_tomato data/input.csv data/ref.csv \
 - `--force`, `-f`         : Overwrite existing output files without prompting
 
 ## Logic and Behavior
-- Fuzzy comparison is always case-insensitive (LOWER).
-- The join is a LEFT JOIN: all input file records are always present in the clean output.
-- The clean output file contains only the best match for each input row (if it exceeds the threshold).
+
+- Fuzzy comparison is case-insensitive by default (the tool applies `LOWER()` during matching). Use `--raw-case` to enable case-sensitive comparisons.
+- Matching uses the configured join pairs and returns the best match per input row when that match's average similarity (`avg_score`) meets or exceeds the configured `--threshold`.
+- Ambiguity definition and handling: an input row is considered "ambiguous" when two or more reference rows obtain the same maximum `avg_score` for that input (and that maximum score is >= `--threshold`). Ambiguous input rows are excluded from the "clean" output to avoid adding potentially incorrect data.
+- Use `--output-ambiguous` to save a separate CSV with the ambiguous candidate reference rows (the rows having the equal maximum score). If `--output-ambiguous` is not provided, the program will still detect ambiguous inputs and will print a warning advising how to inspect them.
+- The clean output file contains only inputs with a single best reference match (unique maximum score >= threshold). If multiple reference rows tie for the best score, that input will not appear in the clean output and will be reported as ambiguous.
 - You can add extra fields from the reference file using `--add-field`.
-- If you specify `--output-ambiguous`, an ambiguous records file is generated (for multiple matches with the same highest score).
-- If no ambiguous records are found, a message "No ambiguous records found." is displayed.
-- If ambiguous records are found, a warning message is displayed, indicating the file to check.
-- The `--clean-whitespace` option applies whitespace normalization to join columns before fuzzy matching, removing leading/trailing spaces and replacing multiple consecutive spaces with single spaces.
+- The `--latinize` and whitespace/case options control normalization before scoring (see the "Normalization Options" section above).
 - **File Overwrite Protection**: By default, the script will prompt for confirmation before overwriting existing output files. Use `--force` to bypass this protection for automated scripts.
 
 ## Output
