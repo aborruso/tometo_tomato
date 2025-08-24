@@ -1,8 +1,10 @@
 project:
   type: website
+  output-dir: docs
   render:
     - "*.qmd"
     - "!*.md"
+    - "doc_sources/"
 
 resources:
   - files/input.csv
@@ -15,7 +17,7 @@ website:
     left:
       - href: index.qmd
         text: Home
-      - href: docs/about.qmd
+      - href: doc_sources/about.qmd
         text: About
 
   page-footer:
