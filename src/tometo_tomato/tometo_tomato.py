@@ -335,6 +335,24 @@ def main():
 
     select_clean_cols, select_ambiguous_cols, selected_input_cols_list = prepare_select_clauses(join_pairs, add_fields, args.show_score)
 
+    # Patch: per l'output ambiguo, costruisco una lista di colonne senza prefissi ref_
+    # e uso solo i nomi originali delle colonne di input e ref
+    ambiguous_cols_list = []
+    # Colonne di input
+    for col in selected_input_cols_list:
+        ambiguous_cols_list.append(f'"{col}"')
+    # Colonne di ref usate per il join
+    for pair in join_pairs:
+        ref_col = pair.split(",")[1].strip().replace('"', '').replace("'", "")
+        ambiguous_cols_list.append(f'"{ref_col}"')
+    # Campi aggiuntivi
+    if add_fields:
+        for f in add_fields:
+            ambiguous_cols_list.append(f'"{f}"')
+    if args.show_score:
+        ambiguous_cols_list.append('avg_score')
+    select_ambiguous_cols_fixed = ', '.join(ambiguous_cols_list)
+
     con = duckdb.connect(database=":memory:")
 
     # Register UDF for latinization if needed
@@ -480,9 +498,27 @@ def main():
     # Build DuckDB SQL for clean output
     sql_clean = f"""
 COPY (
+    WITH max_scores AS (
+        SELECT input_id, MAX(avg_score) as max_score
+        FROM all_scores
+        WHERE avg_score >= {args.threshold}
+        GROUP BY input_id
+    ),
+    ambiguous_inputs AS (
+        SELECT ms.input_id
+        FROM max_scores ms
+        JOIN all_scores s ON ms.input_id = s.input_id AND ms.max_score = s.avg_score
+        GROUP BY ms.input_id
+        HAVING COUNT(*) > 1
+    ),
+    clean_best_matches AS (
+        SELECT * FROM best_matches
+        WHERE rnk = 1
+        AND input_id NOT IN (SELECT input_id FROM ambiguous_inputs)
+    )
     SELECT DISTINCT {select_clean_cols}
     FROM input_with_id inp
-    LEFT JOIN (SELECT * FROM best_matches WHERE rnk = 1) bst ON inp.input_id = bst.input_id
+    JOIN clean_best_matches bst ON inp.input_id = bst.input_id
 ) TO '{args.output_clean}' (HEADER, DELIMITER ',');
 """
 
@@ -493,6 +529,25 @@ COPY (
 
     con.execute(sql_clean)
 
+    # Check for ambiguous records even if --output-ambiguous is not specified
+    ambiguous_count_result = con.execute(f"""
+        WITH max_scores AS (
+            SELECT input_id, MAX(avg_score) as max_score
+            FROM all_scores
+            WHERE avg_score >= {args.threshold}
+            GROUP BY input_id
+        ),
+        ambiguous_inputs AS (
+            SELECT ms.input_id
+            FROM max_scores ms
+            JOIN all_scores s ON ms.input_id = s.input_id AND ms.max_score = s.avg_score
+            GROUP BY ms.input_id
+            HAVING COUNT(*) > 1
+        )
+        SELECT COUNT(*) FROM ambiguous_inputs
+    """)
+    ambiguous_count = ambiguous_count_result.fetchone()[0]
+
     if args.output_ambiguous:
         # Check for file overwrite before writing ambiguous output
         if not check_file_overwrite(args.output_ambiguous, args.force):
@@ -502,12 +557,23 @@ COPY (
         # Build DuckDB SQL for ambiguous output
         sql_amb = f"""
 COPY (
-    WITH ambiguous_inputs AS (
-        SELECT input_id FROM best_matches WHERE rnk = 1 GROUP BY input_id HAVING COUNT(*) > 1
+    WITH max_scores AS (
+        SELECT input_id, MAX(avg_score) as max_score
+        FROM all_scores
+        WHERE avg_score >= {args.threshold}
+        GROUP BY input_id
+    ),
+    ambiguous_inputs AS (
+        SELECT ms.input_id
+        FROM max_scores ms
+        JOIN all_scores s ON ms.input_id = s.input_id AND ms.max_score = s.avg_score
+        GROUP BY ms.input_id
+        HAVING COUNT(*) > 1
     )
-    SELECT DISTINCT {select_ambiguous_cols}
+    SELECT DISTINCT {select_ambiguous_cols_fixed}
     FROM all_scores s
     WHERE s.input_id IN (SELECT input_id FROM ambiguous_inputs)
+       AND s.avg_score >= {args.threshold}
 ) TO '{args.output_ambiguous}' (HEADER, DELIMITER ',');
 """
 
@@ -523,6 +589,10 @@ COPY (
             else:
                 ambiguous_file_saved = True
                 logging.warning(f"Ambiguous records found! Check file: {args.output_ambiguous}")
+    else:
+        # Warn about ambiguous records even when no output file is specified
+        if ambiguous_count > 0:
+            logging.warning(f"Ambiguous records found! Use --output-ambiguous filename.csv to see which records are ambiguous")
 
     logging.info("Fuzzy join complete.")
     logging.info(f"- Clean matches saved to: {args.output_clean}")
