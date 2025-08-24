@@ -97,7 +97,30 @@ tometo_tomato "input data.csv" "reference data.csv" \
   --output-clean "clean output.csv"
 ```
 
+
 ### Normalization Options
+
+#### Remove Special Characters with --keep-alphanumeric
+To ignore punctuation and special characters in join columns, use `--keep-alphanumeric` (or `-k`). This keeps only letters, numbers, and spaces before matching:
+
+```bash
+tometo_tomato data/input.csv data/ref.csv \
+  --join-pair name,ref_name \
+  --keep-alphanumeric \
+  --add-field city_code \
+  --threshold 85 \
+  --output-clean output.csv
+```
+
+This will match names like:
+- `John O'Connor` with `John OConnor`
+- `Mary-Jane Smith` with `Mary Jane Smith`
+- `Anna & Co.` with `Anna Co`
+
+You can also use the short version:
+```bash
+tometo_tomato data/input.csv data/ref.csv -j name,ref_name -k -o output.csv
+```
 
 #### Character Normalization with --latinize
 For data with accented characters or different character encodings, use `--latinize` to normalize characters before matching:
