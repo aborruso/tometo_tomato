@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="it" xml:lang="it"><head>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="../it" xml:lang="../it"><head>
 
 <meta charset="utf-8">
 <meta name="generator" content="quarto-1.7.32">
@@ -89,17 +89,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   ],
   "show-item-context": false,
   "language": {
-    "search-no-results-text": "Nessun risultato",
-    "search-matching-documents-text": "documenti trovati",
-    "search-copy-link-title": "Copiare il link nella ricerca",
-    "search-hide-matches-text": "Nascondere i risultati aggiuntivi",
-    "search-more-match-text": "ci sono altri risultati in questo documento",
-    "search-more-matches-text": "ulteriori risultati in questo documento",
-    "search-clear-button-title": "Pulire",
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
     "search-text-placeholder": "",
-    "search-detached-cancel-button-title": "Cancellare",
-    "search-submit-button-title": "Inviare",
-    "search-label": "Ricerca"
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
   }
 }</script>
 
@@ -118,8 +118,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <span class="navbar-title">Tometo Tomato</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Ricerca"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Attiva/disattiva la navigazione" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -145,7 +145,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
         <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">In questa pagina</h2>
+    <h2 id="toc-title">On this page</h2>
    
   <ul>
   <li><a href="#introduzione" id="toc-introduzione" class="nav-link active" data-scroll-target="#introduzione">Introduzione</a>
@@ -334,14 +334,14 @@ Pay Attention
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  r.city_code</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> read_csv_auto(<span class="st">'input.csv'</span>) <span class="kw">AS</span> i</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> read_csv_auto(<span class="st">'ref_sample.csv'</span>) <span class="kw">AS</span> r</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">ON</span> i.city <span class="op">=</span> r.city <span class="kw">AND</span> i.region <span class="op">=</span> r.region</span></code><button title="Copia negli appunti" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">ON</span> i.city <span class="op">=</span> r.city <span class="kw">AND</span> i.region <span class="op">=</span> r.region</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Nota
+Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -391,7 +391,7 @@ Nota
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> read_csv_auto(<span class="st">'input.csv'</span>) <span class="kw">AS</span> i</span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> read_csv_auto(<span class="st">'ref_sample.csv'</span>) <span class="kw">AS</span> r</span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">ON</span> i.region <span class="op">=</span> r.region</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> levenshtein(i.city, r.city) <span class="op">&lt;=</span> <span class="dv">2</span>;</span></code><button title="Copia negli appunti" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> levenshtein(i.city, r.city) <span class="op">&lt;=</span> <span class="dv">2</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <table class="table-striped small table-sm caption-top table">
 <caption>Risultato di un join fuzzy tra dati errati e dati ufficiali</caption>
 <colgroup>
@@ -427,7 +427,7 @@ Nota
 <p>Se aumentiamo la soglia a 10, non cambia nulla, perché ad esempio il Comune di <code>Rodengo Saiano</code> è scritto in maiuscolo e con il trattino e la distanza tra <code>RODENGO-SAIANO</code> e <code>Rodengo Saiano</code> è pari a <strong>12</strong>:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SELECT</span> levenshtein<span class="er">(</span><span class="st">'RODENGO-SAIANO'</span><span class="ex">,</span> <span class="st">'Rodengo Saiano'</span><span class="kw">)</span> <span class="ex">AS</span> distance<span class="kw">;</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">12</span></span></code><button title="Copia negli appunti" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">12</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Se si imposta la soglia a 15 ne otteniamo in ogni caso soltanto 2, perché il JOIN del campo <code>region</code> non trova corrispondenza tra <code>CALABRIA</code> e <code>Calabria</code>. Quindi dovremmo usare una funzione di distanza tra stringhe anche per il campo <code>region</code>:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  i.city <span class="kw">AS</span> input_city,</span>
@@ -439,7 +439,7 @@ Nota
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> read_csv_auto(<span class="st">'input.csv'</span>) <span class="kw">AS</span> i</span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> read_csv_auto(<span class="st">'ref_sample.csv'</span>) <span class="kw">AS</span> r</span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">ON</span> levenshtein(i.city, r.city) <span class="op">&lt;=</span> <span class="dv">15</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> levenshtein(<span class="fu">LOWER</span>(i.region), <span class="fu">LOWER</span>(r.region)) <span class="op">&lt;</span> <span class="dv">10</span></span></code><button title="Copia negli appunti" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> levenshtein(<span class="fu">LOWER</span>(i.region), <span class="fu">LOWER</span>(r.region)) <span class="op">&lt;</span> <span class="dv">10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Ma è l’<strong>output non è</strong> proprio <strong>quello che ci aspettiamo</strong>, non 3 righe in totale (una per ogni Comune), ma <strong>ben 8 righe</strong>:</p>
 <table class="table-striped small table-sm caption-top table">
 <caption>Risultato di un join fuzzy tra dati errati e dati ufficiali</caption>
@@ -574,7 +574,7 @@ Nota
 <span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    city_distance,</span>
 <span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    region_distance</span>
 <span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ranked_matches</span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> rn <span class="op">=</span> <span class="dv">1</span>;</span></code><button title="Copia negli appunti" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> rn <span class="op">=</span> <span class="dv">1</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <table class="table-striped small table-sm caption-top table">
 <caption>Risultato di un join fuzzy, con selezione della migliore corrispondenza</caption>
 <colgroup>
@@ -643,7 +643,7 @@ Nota
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Nota
+Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -727,7 +727,7 @@ Nota
 </section>
 
 
-<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Note</h2>
+<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
 
 <ol>
 <li id="fn1"><p><a href="https://www.istat.it/en/classification/codes-of-italian-municipalities-provinces-and-regions/">Codes of Italian municipalities</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
@@ -758,12 +758,12 @@ Nota
       // flash "checked"
       button.classList.add('code-copy-button-checked');
       var currentTitle = button.getAttribute("title");
-      button.setAttribute("title", "Copiato!");
+      button.setAttribute("title", "Copied!");
       let tooltip;
       if (window.bootstrap) {
         button.setAttribute("data-bs-toggle", "tooltip");
         button.setAttribute("data-bs-placement", "left");
-        button.setAttribute("data-bs-title", "Copiato!");
+        button.setAttribute("data-bs-title", "Copied!");
         tooltip = new bootstrap.Tooltip(button, 
           { trigger: "manual", 
             customClass: "code-copy-button-tooltip",

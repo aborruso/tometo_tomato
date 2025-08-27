@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="it" xml:lang="it"><head>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="../it" xml:lang="../it"><head>
 
 <meta charset="utf-8">
 <meta name="generator" content="quarto-1.7.32">
@@ -89,17 +89,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   ],
   "show-item-context": false,
   "language": {
-    "search-no-results-text": "Nessun risultato",
-    "search-matching-documents-text": "documenti trovati",
-    "search-copy-link-title": "Copiare il link nella ricerca",
-    "search-hide-matches-text": "Nascondere i risultati aggiuntivi",
-    "search-more-match-text": "ci sono altri risultati in questo documento",
-    "search-more-matches-text": "ulteriori risultati in questo documento",
-    "search-clear-button-title": "Pulire",
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
     "search-text-placeholder": "",
-    "search-detached-cancel-button-title": "Cancellare",
-    "search-submit-button-title": "Inviare",
-    "search-label": "Ricerca"
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
   }
 }</script>
 
@@ -118,8 +118,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <span class="navbar-title">Tometo Tomato</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Ricerca"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Attiva/disattiva la navigazione" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -145,7 +145,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
         <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">In questa pagina</h2>
+    <h2 id="toc-title">On this page</h2>
    
   <ul>
   <li><a href="#introduzione" id="toc-introduzione" class="nav-link active" data-scroll-target="#introduzione">Introduzione</a></li>
@@ -153,7 +153,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#i-nostri-file-di-esempio" id="toc-i-nostri-file-di-esempio" class="nav-link" data-scroll-target="#i-nostri-file-di-esempio">I Nostri File di Esempio</a></li>
   <li><a href="#uso-fondamentale" id="toc-uso-fondamentale" class="nav-link" data-scroll-target="#uso-fondamentale">Uso Fondamentale</a></li>
   <li><a href="#il-risultato" id="toc-il-risultato" class="nav-link" data-scroll-target="#il-risultato">Il Risultato</a></li>
-  <li><a href="#opzioni-avanzate-utili" id="toc-opzioni-avanzate-utili" class="nav-link" data-scroll-target="#opzioni-avanzate-utili">Opzioni Avanzate Utili</a></li>
+  <li><a href="#opzioni-avanzate-utili" id="toc-opzioni-avanzate-utili" class="nav-link" data-scroll-target="#opzioni-avanzate-utili">Opzioni Avanzate Utili</a>
+  <ul class="collapse">
+  <li><a href="#prestazioni-blocking-con---block-prefix" id="toc-prestazioni-blocking-con---block-prefix" class="nav-link" data-scroll-target="#prestazioni-blocking-con---block-prefix">Prestazioni: Blocking con <code>--block-prefix</code></a></li>
+  </ul></li>
   <li><a href="#ambiguità-e-comportamento-degli-output" id="toc-ambiguità-e-comportamento-degli-output" class="nav-link" data-scroll-target="#ambiguità-e-comportamento-degli-output">Ambiguità e comportamento degli output</a></li>
   </ul>
 </nav>
@@ -212,7 +215,7 @@ Rodengo Saiano,Lombardia,017164</code></pre>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-j</span> <span class="st">"region,region"</span> <span class="dt">\</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> <span class="st">"city_code"</span> <span class="dt">\</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> <span class="dt">\</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"output/clean_matches.csv"</span></span></code><button title="Copia negli appunti" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"output/clean_matches.csv"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Analizziamo il comando pezzo per pezzo:</p>
 <ul>
 <li><strong><code>tometo_tomato docs/files/input.csv docs/files/ref.csv</code></strong>: Indichiamo il programma da eseguire, seguito dal file di input e da quello di riferimento.</li>
@@ -240,6 +243,18 @@ Rodengo Saiano,Lombardia,017164</code></pre>
 <ul>
 <li><strong><code>--raw-case</code> e <code>--raw-whitespace</code></strong>: Disabilitano la normalizzazione di maiuscole/minuscole e degli spazi, per un controllo più fine.</li>
 </ul>
+<section id="prestazioni-blocking-con---block-prefix" class="level3">
+<h3 class="anchored" data-anchor-id="prestazioni-blocking-con---block-prefix">Prestazioni: Blocking con <code>--block-prefix</code></h3>
+<p>Su dataset grandi, confrontare ogni riga dell’input con ogni riga del riferimento è costoso. Con <code>--block-prefix N</code> il confronto avviene solo tra record che condividono la stessa chiave di blocco, costruita concatenando i primi N caratteri delle colonne di join già normalizzate.</p>
+<p>Esempio (prefisso di 3 caratteri su <code>city</code> e <code>region</code>):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tometo_tomato</span> docs/files/input.csv docs/files/ref.csv <span class="dt">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-j</span> <span class="st">"city,city"</span> <span class="at">-j</span> <span class="st">"region,region"</span> <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> <span class="st">"city_code"</span> <span class="at">-s</span> <span class="at">-t</span> 85 <span class="dt">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--block-prefix</span> 3 <span class="dt">\</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"output/clean_matches.csv"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Suggerimenti per N: - 2–3: più sicuro su dati “sporchi” (abbreviazioni, apostrofi) - 3: buon default per city+region - 4+: pruning più forte su dati puliti; valuta multi‑pass se cala la recall</p>
+<p>Nota: la chiave usa le stesse normalizzazioni del matching (spazi, case, <code>--latinize</code>, <code>--keep-alphanumeric</code>).</p>
+</section>
 </section>
 <section id="ambiguità-e-comportamento-degli-output" class="level2">
 <h2 class="anchored" data-anchor-id="ambiguità-e-comportamento-degli-output">Ambiguità e comportamento degli output</h2>
@@ -281,12 +296,12 @@ Rodengo Saiano,Lombardia,017164</code></pre>
       // flash "checked"
       button.classList.add('code-copy-button-checked');
       var currentTitle = button.getAttribute("title");
-      button.setAttribute("title", "Copiato!");
+      button.setAttribute("title", "Copied!");
       let tooltip;
       if (window.bootstrap) {
         button.setAttribute("data-bs-toggle", "tooltip");
         button.setAttribute("data-bs-placement", "left");
-        button.setAttribute("data-bs-title", "Copiato!");
+        button.setAttribute("data-bs-title", "Copied!");
         tooltip = new bootstrap.Tooltip(button, 
           { trigger: "manual", 
             customClass: "code-copy-button-tooltip",

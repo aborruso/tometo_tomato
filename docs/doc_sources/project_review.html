@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>About Me – Tometo Tomato</title>
+<title>project_review – Tometo Tomato</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -94,7 +94,7 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link active" href="../doc_sources/about.html" aria-current="page"> 
+    <a class="nav-link" href="../doc_sources/about.html"> 
 <span class="menu-text">About</span></a>
   </li>  
 </ul>
@@ -108,35 +108,134 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#project-review-tometo_tomato" id="toc-project-review-tometo_tomato" class="nav-link active" data-scroll-target="#project-review-tometo_tomato">Project Review: tometo_tomato</a>
+  <ul class="collapse">
+  <li><a href="#overview" id="toc-overview" class="nav-link" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#strengths" id="toc-strengths" class="nav-link" data-scroll-target="#strengths">Strengths</a></li>
+  <li><a href="#key-risks-issues" id="toc-key-risks-issues" class="nav-link" data-scroll-target="#key-risks-issues">Key Risks / Issues</a></li>
+  <li><a href="#recommendations" id="toc-recommendations" class="nav-link" data-scroll-target="#recommendations">Recommendations</a></li>
+  <li><a href="#file-specific-notes" id="toc-file-specific-notes" class="nav-link" data-scroll-target="#file-specific-notes">File-Specific Notes</a></li>
+  <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
+  <li><a href="#suggested-next-steps" id="toc-suggested-next-steps" class="nav-link" data-scroll-target="#suggested-next-steps">Suggested Next Steps</a></li>
+  </ul></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">About Me</h1>
-</div>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta">
 
-    
-  
-    
-  </div>
-  
+<section id="project-review-tometo_tomato" class="level1">
+<h1>Project Review: tometo_tomato</h1>
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">Overview</h2>
+<ul>
+<li>Purpose: Python CLI to fuzzy-join CSVs using DuckDB + rapidfuzz.</li>
+<li>Structure: single entrypoint (<code>tometo_tomato</code>), core logic in <code>src/tometo_tomato/tometo_tomato.py</code>, tests in <code>tests/</code>, Quarto docs in <code>doc_sources/</code> → built site in <code>docs/</code>.</li>
+<li>Packaging: <code>pyproject.toml</code> + <code>setup.py</code> with setuptools_scm; CLI entry configured.</li>
+</ul>
+</section>
+<section id="strengths" class="level2">
+<h2 class="anchored" data-anchor-id="strengths">Strengths</h2>
+<ul>
+<li>Solid CSV ingestion: uses <code>read_csv_auto(..., header=true, all_varchar=true)</code> and a robust header detection with <code>LIMIT 0</code> fallback.</li>
+<li>Flexible matching: multi-column joins, optional pair inference, and selective normalization flags (<code>--raw-case</code>, <code>--raw-whitespace</code>, <code>--latinize</code>, <code>--keep-alphanumeric</code>).</li>
+<li>Ambiguity handling: clear definition (ties on max avg_score), clean vs ambiguous outputs, helpful warnings.</li>
+<li>Fuzzy fallback: tries rapidfuzz; falls back to <code>levenshtein</code>/<code>damerau_levenshtein</code> when unavailable.</li>
+<li>Sensible CLI/UX: verbosity controls, overwrite protection via <code>--force</code>.</li>
+<li>Tests present: cover headers, pair building, overwrites, whitespace/latinize.</li>
+</ul>
+</section>
+<section id="key-risks-issues" class="level2">
+<h2 class="anchored" data-anchor-id="key-risks-issues">Key Risks / Issues</h2>
+<ul>
+<li>Scalability: <code>CROSS JOIN</code> of input × reference in <code>all_scores</code> can explode on large datasets despite threshold filtering.</li>
+<li>SQL path quoting: some <code>read_csv_auto('{args.input_file}')</code> calls don’t escape single quotes; <code>read_header()</code> does but others should too.</li>
+<li>Flags vs docs mismatch: README mentions <code>--clean-whitespace</code> but code uses <code>--raw-whitespace</code>. <code>--add-field</code> help suggests “space separated” but implementation is <code>append</code> only.</li>
+<li>Versioning inconsistency: <code>pyproject.toml</code> sets a static <code>version</code>, while setuptools_scm generates <code>src/_version.py</code> (committed). Mixed approaches can drift.</li>
+<li>Test import bug: <code>tests/test_core.py::test_scorer_option</code> uses <code>duckdb</code> without importing it; test likely skips unintentionally.</li>
+<li>Accent normalization: <code>strip_accents(...)</code> used in SQL may depend on DuckDB build/extensions; not explicitly ensured/loaded.</li>
+<li>Output shape: “clean” output includes only join columns from input (not all input columns). May surprise users expecting a full left join; needs docs or an option.</li>
+</ul>
+</section>
+<section id="recommendations" class="level2">
+<h2 class="anchored" data-anchor-id="recommendations">Recommendations</h2>
+<ul>
+<li>Performance/blocking:
+<ul>
+<li>Use the new <code>--block-prefix N</code> flag to enable prefix-based blocking and cut down candidate comparisons. Start with N=3 for city+region; adjust based on data quality.</li>
+<li>Consider additional lightweight prefilters (length bands, region/province exact block) before distance computation.</li>
+<li>Consider per-input top-1 selection without fully materializing <code>all_scores</code> (e.g., ORDER BY avg_score DESC LIMIT 1 per block).</li>
+</ul></li>
+<li>SQL safety:
+<ul>
+<li>Create a helper to quote file paths (escape single quotes) and reuse it across all <code>read_csv_auto</code> calls.</li>
+</ul></li>
+<li>CLI and docs alignment:
+<ul>
+<li>Replace <code>--clean-whitespace</code> in README with <code>--raw-whitespace</code> and clarify defaults.</li>
+<li>For <code>--add-field</code>, either implement parsing of multiple names in a single argument or adjust help to “repeat the flag”.</li>
+<li>Add an option <code>--all-input-columns</code> to include all input columns in the clean output.</li>
+<li>Validate outputs don’t overwrite input/reference files.</li>
+</ul></li>
+<li>Packaging/versioning:
+<ul>
+<li>Adopt setuptools_scm fully: remove static <code>version</code> from <code>pyproject.toml</code>, mark <code>dynamic = ["version"]</code>, and stop committing <code>src/_version.py</code>.</li>
+<li>If <code>strip_accents</code> requires an extension (e.g., ICU), <code>INSTALL/LOAD</code> it or document the requirement.</li>
+</ul></li>
+<li>Tests/CI:
+<ul>
+<li>Fix missing <code>import duckdb</code> in <code>tests/test_core.py</code>.</li>
+<li>Add tests for <code>--infer-pairs</code> edge thresholds, missing columns, and file paths with quotes/spaces.</li>
+<li>Add ruff/black (and optionally mypy) to CI; test matrix for Python 3.8–3.12.</li>
+</ul></li>
+<li>Code hygiene:
+<ul>
+<li>Remove unused Python UDF for latinize (logic is in SQL).</li>
+<li>Factor <code>main()</code> into smaller functions: building views, scoring expression, clean/ambiguous writers.</li>
+</ul></li>
+</ul>
+</section>
+<section id="file-specific-notes" class="level2">
+<h2 class="anchored" data-anchor-id="file-specific-notes">File-Specific Notes</h2>
+<ul>
+<li><code>src/tometo_tomato/tometo_tomato.py</code>:
+<ul>
+<li>Quote <code>args.input_file</code>/<code>args.reference_file</code> like <code>read_header()</code> does.</li>
+<li>Ensure <code>strip_accents</code> availability or provide a fallback/documentation.</li>
+<li>Consider preserving user column order in <code>prepare_select_clauses</code> rather than sorted sets.</li>
+</ul></li>
+<li><code>tests/test_core.py</code>:
+<ul>
+<li>Add <code>import duckdb</code> at the top to ensure <code>test_scorer_option</code> executes as intended.</li>
+</ul></li>
+</ul>
+</section>
+<section id="documentation" class="level2">
+<h2 class="anchored" data-anchor-id="documentation">Documentation</h2>
+<ul>
+<li>Fix README sections: duplicate “Basic example”, flag naming mismatch, and clarify output columns (join-only vs all input; add example and option).</li>
+<li>Add a “Performance Tips” section: blocking strategies, thresholds, and when to use <code>token_set_ratio</code>.</li>
+</ul>
+</section>
+<section id="suggested-next-steps" class="level2">
+<h2 class="anchored" data-anchor-id="suggested-next-steps">Suggested Next Steps</h2>
+<ul>
+<li>Quick fixes: path escaping, README alignment, overwrite safeguards, test import.</li>
+<li>Medium: add <code>--all-input-columns</code>, introduce simple blocking/prefilters.</li>
+<li>Long: module refactor (cli/engine/io_utils), richer blocking strategies, benchmarking guidance.</li>
+</ul>
 
 
-</header>
-
-
-<p>This is the about page.</p>
-<p>You can put information about yourself or your project here.</p>
-
-
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
