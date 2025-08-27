@@ -8,6 +8,7 @@
 - Configurable similarity threshold
 - Separate output for clean and ambiguous matches
 - Execution statistics logging
+- Optional blocking to speed up large joins (`--block-prefix`)
 
 ## Installation
 
@@ -169,12 +170,14 @@ tometo_tomato data/input.csv data/ref.csv \
 - `--join-pair colA,colB` : Pair of columns to compare (repeatable)
 
 - `--add-field field`     : Field from the reference file to add to the output
-- `--threshold N`         : Minimum similarity threshold (default: 90)
+ - `--threshold N`         : Minimum similarity threshold (default: 85)
 - `--show-score`          : Show average similarity score
 - `--output-clean`        : Output file for clean matches (mandatory)
 - `--output-ambiguous`    : Output file for ambiguous matches (optional)
 - `--scorer ALGO`         : Fuzzy matching algorithm (`ratio` or `token_set_ratio`). Default: `ratio`.
-- `--clean-whitespace`    : Remove redundant whitespace from columns before fuzzy matching
+- `--raw-whitespace`      : Do not normalize whitespace (by default, spaces are trimmed and reduced)
+- `--raw-case`            : Case-sensitive comparison (by default, case-insensitive)
+- `--block-prefix N`      : Enable blocking by joining only records that share the same key built from the first N characters of each cleaned join column, concatenated with `|` (default: disabled)
 - `--force`, `-f`         : Overwrite existing output files without prompting
 
 ## Logic and Behavior
@@ -198,6 +201,27 @@ See the file [docs/PRD.md](docs/PRD.md) for a detailed description and practical
 ## Notes
 - The `--scorer token_set_ratio` is recommended for cases where names have different word counts (e.g., "Reggio Calabria" vs. "Reggio di Calabria").
 - If you don't specify `--join-pair`, all columns with the same name in both files will be used.
+
+## Performance: Blocking with `--block-prefix`
+
+On large datasets, a full Cartesian comparison is expensive. Use `--block-prefix N` to compare only records that share the same block key built from the first N characters of each cleaned join column:
+
+Example with two join pairs (city, region) and a 3-char prefix:
+
+```bash
+tometo_tomato input.csv ref.csv \
+  -j city,city -j region,region \
+  -a city_code -s -t 85 \
+  --block-prefix 3 \
+  -o output.csv
+```
+
+Guidelines for choosing N:
+- 2–3: safer recall on noisy data (abbreviations, apostrophes)
+- 3: good default for city+region in Italian data
+- 4+: stronger pruning on very clean data; consider multi-pass if recall drops
+
+The block key respects the same cleaning as matching (case, whitespace, latinize, keep-alphanumeric), ensuring consistency between pruning and scoring.
 - Use `--clean-whitespace` when your data contains inconsistent spacing (e.g., "Rome  City" vs " Rome City ") to improve matching accuracy.
 - The tool is designed to be simple, robust, and easily integrable into data cleaning workflows.
 

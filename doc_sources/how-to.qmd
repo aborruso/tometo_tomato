@@ -85,6 +85,27 @@ L'utilità offre molte altre opzioni per personalizzare il processo:
 
 -   **`--raw-case` e `--raw-whitespace`**: Disabilitano la normalizzazione di maiuscole/minuscole e degli spazi, per un controllo più fine.
 
+### Prestazioni: Blocking con `--block-prefix`
+
+Su dataset grandi, confrontare ogni riga dell'input con ogni riga del riferimento è costoso. Con `--block-prefix N` il confronto avviene solo tra record che condividono la stessa chiave di blocco, costruita concatenando i primi N caratteri delle colonne di join già normalizzate.
+
+Esempio (prefisso di 3 caratteri su `city` e `region`):
+
+```bash
+tometo_tomato docs/files/input.csv docs/files/ref.csv \
+  -j "city,city" -j "region,region" \
+  -a "city_code" -s -t 85 \
+  --block-prefix 3 \
+  -o "output/clean_matches.csv"
+```
+
+Suggerimenti per N:
+- 2–3: più sicuro su dati “sporchi” (abbreviazioni, apostrofi)
+- 3: buon default per city+region
+- 4+: pruning più forte su dati puliti; valuta multi‑pass se cala la recall
+
+Nota: la chiave usa le stesse normalizzazioni del matching (spazi, case, `--latinize`, `--keep-alphanumeric`).
+
 ## Ambiguità e comportamento degli output
 
 Lo strumento segnala e gestisce in modo esplicito i casi ambigui per evitare di inserire dati potenzialmente errati nell'output "pulito".

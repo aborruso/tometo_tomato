@@ -89,6 +89,15 @@ def parse_args():
     parser.add_argument("--raw-case", action="store_true", help="Enable case sensitive comparison (do not convert to lower-case)")
     parser.add_argument("--latinize", action="store_true", help="Normalize/latinize accented and special characters before matching")
     parser.add_argument("--keep-alphanumeric", "-k", action="store_true", help="Keep only alphanumeric characters and spaces in join columns (removes punctuation and special characters)")
+    parser.add_argument(
+        "--block-prefix",
+        type=int,
+        default=0,
+        help=(
+            "Enable blocking by joining only records that share the same key built "
+            "from the first N characters of each cleaned join column, concatenated with '|' (N = block-prefix)."
+        ),
+    )
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Increase verbosity (e.g., -v, -vv)")
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress all output except errors")
     parser.add_argument("--force", "-f", action="store_true", help="Overwrite existing output files without prompting")
@@ -199,14 +208,8 @@ def try_load_rapidfuzz(con: duckdb.DuckDBPyConnection) -> bool:
 def choose_score_expr(
     using_rapidfuzz: bool,
     join_pairs: List[str],
-def choose_score_expr(
-    using_rapidfuzz: bool,
-    join_pairs: List[str],
     scorer: str,
     args: "argparse.Namespace",
-    preprocessed: bool = False,
-) -> str:
-    args,
     preprocessed: bool = False,
 ) -> str:
     import re
@@ -231,12 +234,9 @@ def choose_score_expr(
                 exprs.append(
                     f"(1.0 - CAST(levenshtein(ref.\"{ref_col}_clean\", inp.\"{inp_col}_clean\") AS DOUBLE) "
                     f"/ NULLIF(GREATEST(LENGTH(ref.\"{ref_col}_clean\"), LENGTH(inp.\"{inp_col}_clean\")),0)) * 100"
-    def clean_column_expr(table_alias: str, column: str, args: "argparse.Namespace") -> str:
+                )
         return " + ".join(exprs)
-
-    def clean_column_expr(table_alias: str, column: str, args) -> str:
-        """Generate column expression with default whitespace cleaning unless --raw-whitespace is set."""
-        base_expr = f'{table_alias}."{column}"'
+    # ...resto della funzione...
         expr = base_expr
         if not args.raw_whitespace:
             expr = f"trim(regexp_replace({expr}, '\\s+', ' ', 'g'))"
@@ -485,21 +485,34 @@ def main():
     con.execute(f"""
         CREATE TEMP VIEW input_preproc AS
         SELECT inp.input_id, {', '.join(input_clean_cols_sql)}
+        {',' if args.block_prefix and args.block_prefix > 0 else ''}
+        {(" || '|' || ".join([f"substr(" + _build_clean_expr('inp', pair.split(',')[0].strip().replace('"','').replace("'",'')) + f", 1, {args.block_prefix})" for pair in join_pairs])) + " AS block_key" if args.block_prefix and args.block_prefix > 0 else ''}
         FROM input_with_id inp;
     """)
 
     con.execute(f"""
         CREATE TEMP VIEW ref_preproc AS
         SELECT ref.*, {', '.join(ref_clean_cols_sql)}
+        {',' if args.block_prefix and args.block_prefix > 0 else ''}
+        {(" || '|' || ".join([f"substr(" + _build_clean_expr('ref', pair.split(',')[1].strip().replace('"','').replace("'",'')) + f", 1, {args.block_prefix})" for pair in join_pairs])) + " AS block_key" if args.block_prefix and args.block_prefix > 0 else ''}
         FROM read_csv_auto('{args.reference_file}', header=true, all_varchar=true) AS ref;
     """)
 
-    con.execute(f"""
-        CREATE TEMP VIEW all_scores AS
-        SELECT inp.input_id, ref.*, {avg_score_expr} AS avg_score
-        FROM ref_preproc AS ref
-        CROSS JOIN input_preproc AS inp;
-    """)
+    if args.block_prefix and args.block_prefix > 0:
+        con.execute(f"""
+            CREATE TEMP VIEW all_scores AS
+            SELECT inp.input_id, ref.*, {avg_score_expr} AS avg_score
+            FROM ref_preproc AS ref
+            JOIN input_preproc AS inp
+              ON ref.block_key = inp.block_key;
+        """)
+    else:
+        con.execute(f"""
+            CREATE TEMP VIEW all_scores AS
+            SELECT inp.input_id, ref.*, {avg_score_expr} AS avg_score
+            FROM ref_preproc AS ref
+            CROSS JOIN input_preproc AS inp;
+        """)
 
     con.execute(f"""
         CREATE TEMP VIEW best_matches AS

@@ -68,8 +68,7 @@ The system implements a **left join** approach:
 ## Non-Functional Requirements
 
 ### NFR1: Performance
-
-The procedure is optimized to handle large datasets. The use of `WHERE score > threshold` in DuckDB reduces computational load.
+The procedure is optimized to handle large datasets. The use of `WHERE score > threshold` in DuckDB reduces computational load. Additionally, optional blocking via `--block-prefix N` restricts candidate comparisons to records sharing the same prefix-based block key, drastically reducing comparisons while preserving accuracy on typical city/region data.
 
 ### NFR2: Configurability
 
@@ -79,6 +78,7 @@ The user can easily configure:
 - Similarity threshold (number from 0 to 100).
 - `rapidfuzz` function to use (e.g., `rapidfuzz_ratio`, `rapidfuzz_token_sort_ratio`).
 - Output file paths.
+- Optional blocking strength via `--block-prefix`.
 
 ### NFR3: Traceability
 

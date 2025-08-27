@@ -24,7 +24,8 @@
 
 ## Recommendations
 - Performance/blocking:
-  - Add lightweight prefilters (length bands, first-letter match, region/province exact block) before distance computation.
+  - Use the new `--block-prefix N` flag to enable prefix-based blocking and cut down candidate comparisons. Start with N=3 for city+region; adjust based on data quality.
+  - Consider additional lightweight prefilters (length bands, region/province exact block) before distance computation.
   - Consider per-input top-1 selection without fully materializing `all_scores` (e.g., ORDER BY avg_score DESC LIMIT 1 per block).
 - SQL safety:
   - Create a helper to quote file paths (escape single quotes) and reuse it across all `read_csv_auto` calls.
@@ -60,4 +61,3 @@
 - Quick fixes: path escaping, README alignment, overwrite safeguards, test import.
 - Medium: add `--all-input-columns`, introduce simple blocking/prefilters.
 - Long: module refactor (cli/engine/io_utils), richer blocking strategies, benchmarking guidance.
-
