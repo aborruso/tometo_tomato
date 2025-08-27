@@ -28,5 +28,6 @@ format:
     theme: cosmo
     css: styles.css
     toc: true
-    lang: it
     link-external-newwindow: true
+
+# Do not set a site language for now; use Quarto default (English)
