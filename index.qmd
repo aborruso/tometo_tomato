@@ -1,49 +1,88 @@
 ---
-title: "Welcome to Tométo Tomato"
+title: "Tometo Tomato"
+subtitle: "Fuzzy join for messy CSV data"
 ---
 
-**Tired of messy data breaking your joins?**
+**Your data has typos. Your reference file doesn't. Let's fix that.**
 
-**Tométo Tomato** is your powerful command-line tool for **fuzzy data integration**. It intelligently connects disparate datasets by *similarity*, not just exact matches, even with typos or inconsistencies.
+Tometo Tomato is a command-line tool that connects two CSV files by *similarity*, not just exact matches. It handles typos, abbreviations, accents, and formatting differences — so you can enrich your messy data using an authoritative reference table.
 
-Leveraging **DuckDB** and **rapidfuzz**, Tométo Tomato makes cleaning and merging your data fast, flexible, and reliable.
+Built on [DuckDB](https://duckdb.org/) and [rapidfuzz](https://github.com/rapidfuzz/rapidfuzz).
 
-Unlock the true potential of your data. Get started now!
+## How It Works
 
-**Let's Call the Whole Thing Off!!**
+The workflow has two steps:
+
+```
+ Your file           Reference file
+ (dirty data)        (ground truth)
+      │                     │
+      └──── tometo_tomato ──┘
+                 │
+           Mapping table
+           (dirty → clean + score)
+                 │
+      ┌── exact join (duckdb) ──┐
+      │                         │
+  Your file               Corrected file
+  (original)              (enriched)
+```
+
+**Step 1.** Run `tometo_tomato` to fuzzy-match your dirty column against a reference file. The output is a mapping table that links each dirty value to the best match.
+
+**Step 2.** Use a standard exact join (e.g. with DuckDB) to bring the corrections back into your original file.
+
+## Quick Example
 
 :::::: columns
 ::: {.column width="46%"}
-| city            | region    |
-|-----------------|-----------|
-| Cefalu'         | Sicilia   |
-| Reggio Calabria | CALABRIA  |
-| RODENGO-SAIANO  | Lombardia |
+| municipality | region |
+|---|---|
+| Castro | Pugla |
+| Castro | Lombardia |
+| Calliano | Trentno-Alto Adige |
+| Calliano | Piemnte |
 
-: The raw data {.striped .small}
+: Your working file {.striped .small}
 :::
 
 ::: {.column width="8%"}
 :::
 
 ::: {.column width="46%"}
-| city               | region    | city_code |
-|--------------------|-----------|-----------|
-| Cefalù             | Sicilia   | 082027    |
-| Reggio di Calabria | Calabria  | 080063    |
-| Rodengo Saiano     | Lombardia | 017164    |
+| municipality_name | region | istat_code |
+|---|---|---|
+| Castro | Puglia | 075019 |
+| Castro | Lombardia | 016065 |
+| Calliano | Trentino-Alto Adige | 022032 |
+| Calliano | Piemonte | 005013 |
 
-: The reference data {.striped .small}
+: Reference file {.striped .small}
 :::
 ::::::
 
-| city (input) | region (input) | city (ref) | region (ref) | city_code | avg_score |
-|------------|------------|------------|------------|------------|-----------:|
-| Cefalu' | Sicilia | Cefalù | Sicilia | 082027 | 100.0 |
-| RODENGO-SAIANO | Lombardia | Rodengo Saiano | Lombardia | 017164 | 98.14 |
-| Reggio Calabria | CALABRIA | Reggio di Calabria | Calabria | 080063 | 95.45 |
+```bash
+tometo_tomato work.csv reference.csv \
+  -j "municipality,municipality_name" \
+  -j "region,region" \
+  -a istat_code -s -t 70 \
+  -o mapping.csv
+```
 
-: Example fuzzy join result {.striped .small}
+| municipality | region | ref_municipality_name | ref_region | istat_code | avg_score |
+|---|---|---|---|---|---:|
+| Castro | Pugla | Castro | Puglia | 075019 | 95.5 |
+| Castro | Lombardia | Castro | Lombardia | 016065 | 100.0 |
+| Calliano | Trentno-Alto Adige | Calliano | Trentino-Alto Adige | 022032 | 98.6 |
+| Calliano | Piemnte | Calliano | Piemonte | 005013 | 96.7 |
+
+: Mapping result — each dirty value linked to its best match {.striped .small}
+
+Matching on **two column pairs** (`-j` repeated) ensures "Castro, Pugla" maps to the correct Castro in Puglia, not the one in Lombardia.
 
 <br>
-[[Intro]{.btn .btn-info}](doc_sources/introduction.qmd) [[👉 How to use it]{.btn .btn-primary}](doc_sources/how-to.qmd)
+
+[[Why fuzzy matching?]{.btn .btn-info}](doc_sources/introduction.qmd)
+[[Install]{.btn .btn-secondary}](doc_sources/install.qmd)
+[[Use Case Guide]{.btn .btn-primary}](doc_sources/use-case-guide.qmd)
+[[CLI Reference]{.btn .btn-outline-primary}](doc_sources/cli-reference.qmd)
