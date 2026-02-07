@@ -264,3 +264,42 @@ def test_latinize_option(tmp_path):
         content = f.read()
         assert "José Álvarez" in content, "Original accented characters should be preserved in output"
         assert "Müller" in content, "Original umlauts should be preserved in output"
+
+
+def test_duplicate_input_rows(tmp_path):
+    """Verify that duplicate join-column values match correctly via the DISTINCT optimization.
+
+    Uses 4 input rows: 2× 'rome', 1× 'milan', 1× 'naple'.
+    The DISTINCT optimization deduplicates to 3 keys before the CROSS JOIN,
+    then re-expands. The clean output uses SELECT DISTINCT, so identical
+    output rows collapse — we expect 3 distinct output rows.
+    """
+    input_path = tmp_path / "input.csv"
+    ref_path = tmp_path / "ref.csv"
+    output_path = tmp_path / "output.csv"
+
+    write_csv(input_path, "city", ["rome", "rome", "milan", "naple"])
+    write_csv(ref_path, "city_ref,code", ["Rome,R01", "Milan,M01", "Naples,N01"])
+
+    cmd = [
+        "python3", "src/tometo_tomato/tometo_tomato.py",
+        str(input_path), str(ref_path),
+        "-j", "city,city_ref",
+        "-a", "code",
+        "-s",
+        "-o", str(output_path),
+        "-t", "70",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, f"Script failed: {result.stderr}"
+
+    with open(output_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    # Header + 3 distinct matched rows (the 2 "rome" rows collapse via SELECT DISTINCT)
+    assert len(lines) == 4, f"Expected 4 lines (header + 3 rows), got {len(lines)}: {lines}"
+    content = "".join(lines)
+    assert "rome" in content.lower()
+    assert "milan" in content.lower()
+    assert "R01" in content
+    assert "M01" in content
