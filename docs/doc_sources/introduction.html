@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Perché è stato creato Tométo Tomato – Tometo Tomato</title>
+<title>Why Fuzzy Matching? – Tometo Tomato</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -129,8 +129,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../doc_sources/about.html"> 
-<span class="menu-text">About</span></a>
+    <a class="nav-link active" href="../doc_sources/introduction.html" aria-current="page"> 
+<span class="menu-text">Why</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../doc_sources/install.html"> 
+<span class="menu-text">Install</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../doc_sources/use-case-guide.html"> 
+<span class="menu-text">Use Case Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../doc_sources/cli-reference.html"> 
+<span class="menu-text">CLI Reference</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -148,26 +160,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#introduzione" id="toc-introduzione" class="nav-link active" data-scroll-target="#introduzione">Introduzione</a>
+  <li><a href="#the-problem" id="toc-the-problem" class="nav-link active" data-scroll-target="#the-problem">The Problem</a>
   <ul class="collapse">
-  <li><a href="#file-di-esempio" id="toc-file-di-esempio" class="nav-link" data-scroll-target="#file-di-esempio">File di esempio</a></li>
+  <li><a href="#sample-files" id="toc-sample-files" class="nav-link" data-scroll-target="#sample-files">Sample Files</a></li>
   </ul></li>
-  <li><a href="#utilizzare-sql" id="toc-utilizzare-sql" class="nav-link" data-scroll-target="#utilizzare-sql">Utilizzare SQL</a>
+  <li><a href="#using-sql" id="toc-using-sql" class="nav-link" data-scroll-target="#using-sql">Using SQL</a>
   <ul class="collapse">
-  <li><a href="#fare-il-join" id="toc-fare-il-join" class="nav-link" data-scroll-target="#fare-il-join">Fare il JOIN</a></li>
-  <li><a href="#fare-il-join-fuzzy" id="toc-fare-il-join-fuzzy" class="nav-link" data-scroll-target="#fare-il-join-fuzzy">Fare il JOIN “fuzzy”</a></li>
-  <li><a href="#una-sintesi-per-ridurre-le-distanze" id="toc-una-sintesi-per-ridurre-le-distanze" class="nav-link" data-scroll-target="#una-sintesi-per-ridurre-le-distanze">Una sintesi per ridurre le distanze</a></li>
+  <li><a href="#the-exact-join" id="toc-the-exact-join" class="nav-link" data-scroll-target="#the-exact-join">The Exact JOIN</a></li>
+  <li><a href="#the-fuzzy-join" id="toc-the-fuzzy-join" class="nav-link" data-scroll-target="#the-fuzzy-join">The Fuzzy JOIN</a></li>
+  <li><a href="#reducing-distances-with-normalization" id="toc-reducing-distances-with-normalization" class="nav-link" data-scroll-target="#reducing-distances-with-normalization">Reducing Distances with Normalization</a></li>
   </ul></li>
-  <li><a href="#note-finali" id="toc-note-finali" class="nav-link" data-scroll-target="#note-finali">Note finali</a></li>
+  <li><a href="#what-comes-next" id="toc-what-comes-next" class="nav-link" data-scroll-target="#what-comes-next">What Comes Next</a></li>
   </ul>
-</nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/aborruso/tometo_tomato/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content page-columns page-full" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Perché è stato creato Tométo Tomato</h1>
+<h1 class="title">Why Fuzzy Matching?</h1>
 </div>
 
 
@@ -184,12 +196,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="introduzione" class="level2">
-<h2 class="anchored" data-anchor-id="introduzione">Introduzione</h2>
-<p>Chiunque lavori con i dati molto spesso si imbatte in colonne che dovrebbero rispettare una codifica, un valore standard, una lista di valori noti, ma presentano invece <strong>errori di battitura</strong>, <strong>spazi in eccesso</strong>, <strong>caratteri speciali al posto di caratteri accentati</strong>, <strong>maiuscole/minuscole non coerenti</strong>, ecc..</p>
-<p>Qui sotto ad esempio dei nomi ci città italiane, riportati in modo errato:</p>
+<section id="the-problem" class="level2">
+<h2 class="anchored" data-anchor-id="the-problem">The Problem</h2>
+<p>Anyone who works with data regularly encounters columns that should follow a standard encoding — an official list of values — but instead contain <strong>typos</strong>, <strong>extra whitespace</strong>, <strong>special characters instead of accented letters</strong>, <strong>inconsistent capitalization</strong>, and so on.</p>
+<p>Here are some Italian city names, written incorrectly:</p>
 <table class="table-striped small table-sm caption-top table">
-<caption>Esempi di nomi di città errati</caption>
+<caption>Examples of incorrect city names</caption>
 <colgroup>
 <col style="width: 30%">
 <col style="width: 70%">
@@ -197,25 +209,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <thead>
 <tr class="header">
 <th>city</th>
-<th>tipo di errore</th>
+<th>type of error</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>Cefalu’</td>
-<td>bisognerebbe usare la <code>ù</code> e non <code>u'</code></td>
+<td>should use <code>ù</code> instead of <code>u'</code></td>
 </tr>
 <tr class="even">
 <td>Reggio Calabria</td>
-<td>Il nome corretto è <code>Reggio di Calabria</code></td>
+<td>the official name is <code>Reggio di Calabria</code></td>
 </tr>
 <tr class="odd">
 <td>RODENGO-SAIANO</td>
-<td>bisognerebbe usare <code>Rodengo Saiano</code>, senza <code>-</code> e non tutto maiuscolo</td>
+<td>should be <code>Rodengo Saiano</code>, without <code>-</code> and not all uppercase</td>
 </tr>
 </tbody>
 </table>
-<p><br> Se volessi associare a queste città il codice<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> che <strong>Istat</strong> - l’istituto nazionale di statistica - assegna a ciascuna città, non potrei farlo con una semplice operazione di join, perché i nomi non corrispondono esattamente. Associare un codice a ciascun comune è operazione molto importante perché mi consente di <strong>unire</strong> dati provenienti da fonti diverse, che altrimenti non potrei confrontare, ma anche di <strong>generare</strong> ad esempio <strong>automaticamente</strong> <strong>mappe</strong>, perché i software spesso usano proprio questi codici per identificare i comuni.</p>
+<p><br> If you wanted to associate each city with the code<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> that <strong>ISTAT</strong> — the Italian National Institute of Statistics — assigns to each municipality, a simple exact join would fail because the names don’t match. Associating a code to each municipality is very important: it enables you to <strong>link</strong> data from different sources that would otherwise be incomparable, and to <strong>automatically generate maps</strong>, since mapping software often uses these codes to identify municipalities.</p>
 <div class="callout callout-style-simple callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -226,12 +238,12 @@ Pay Attention
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Chi fa didattica sui dati di solito infatti dice (urlando): <strong>CODES, NOT LABELS!!</strong></p>
+<p>Data educators usually shout: <strong>CODES, NOT LABELS!!</strong></p>
 </div>
 </div>
-<p>I codici correlati alle unità amministrative italiane sono pubblici e liberamente accessibili in CC-BY-4.0 su diverse sezioni del sito Istat. Uno di questi è il <a href="https://situas.istat.it">SITUAS</a>, in cui c’è la pagina con l’“<a href="https://situas.istat.it/web/#/territorio/body?id=61&amp;dateFrom=2025-08-23"><strong>Elenco dei codici e delle denominazioni delle unità territoriali</strong></a>”, scaricabili in formato <code>CSV</code> e <code>JSON</code>.</p>
+<p>The codes for Italian administrative units are public and freely available under CC-BY-4.0 on various sections of the ISTAT website. One source is <a href="https://situas.istat.it">SITUAS</a>, which has a page with the “<a href="https://situas.istat.it/web/#/territorio/body?id=61&amp;dateFrom=2025-08-23"><strong>List of codes and names of territorial units</strong></a>”, downloadable in <code>CSV</code> and <code>JSON</code> format.</p>
 <table class="table-striped small table-sm caption-top table">
-<caption>Esempio di dati ufficiali Istat sui comuni italiani</caption>
+<caption>Official ISTAT municipality data</caption>
 <thead>
 <tr class="header">
 <th>city</th>
@@ -257,20 +269,20 @@ Pay Attention
 </tr>
 </tbody>
 </table>
-<p><br> Se provassi a fare un join tra i dati errati e questi dati ufficiali, <strong>non otterrei alcun risultato</strong>.</p>
+<p><br> If you try to join the incorrect data with this official data, <strong>you get no results</strong>.</p>
 <hr>
-<p>👉 Tométo Tomato è stato creato per risolvere questo problema: consente di <strong>fare comodamente</strong> join <strong>non basati su corrispondenze esatte</strong>, ma su <strong>corrispondenze “simili”</strong>, e <strong>arricchire</strong>, <strong>modificare</strong>, <strong>correggere</strong> la propria brutta tabella di input, confrontandola con una tabella di riferimento.</p>
+<p>Tometo Tomato was created to solve this problem: it lets you <strong>easily perform joins</strong> that are not based on exact matches, but on <strong>similarity</strong>, and then <strong>enrich</strong>, <strong>modify</strong>, and <strong>correct</strong> your messy input table by comparing it against a reference table.</p>
 <hr>
-<section id="file-di-esempio" class="level3">
-<h3 class="anchored" data-anchor-id="file-di-esempio">File di esempio</h3>
-<p>Queste sono le nostre due tabelle di esempio, disponibili come <a href="files/input.csv"><code>input.csv</code></a> e <a href="files/ref_sample.csv"><code>ref_sample.csv</code></a> in modo che sia possibile scaricarle e provare a eseguire gli esempi.</p>
+<section id="sample-files" class="level3">
+<h3 class="anchored" data-anchor-id="sample-files">Sample Files</h3>
+<p>These are our two sample tables, available as <a href="files/input.csv"><code>input.csv</code></a> and <a href="files/ref_sample.csv"><code>ref_sample.csv</code></a> so you can download them and try the examples yourself.</p>
 </section>
 </section>
-<section id="utilizzare-sql" class="level2 page-columns page-full">
-<h2 class="anchored" data-anchor-id="utilizzare-sql">Utilizzare SQL</h2>
-<section id="fare-il-join" class="level3">
-<h3 class="anchored" data-anchor-id="fare-il-join">Fare il JOIN</h3>
-<p>Il primo test è quello di lanciare una semplice query SQL di join, per vedere cosa succede a partire dai nostri dati di esempio.</p>
+<section id="using-sql" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="using-sql">Using SQL</h2>
+<section id="the-exact-join" class="level3">
+<h3 class="anchored" data-anchor-id="the-exact-join">The Exact JOIN</h3>
+<p>The first test is to run a simple SQL join query to see what happens with our sample data.</p>
 <div class="columns">
 <div class="column" style="width:46%;">
 <table class="table-striped small table-sm caption-top table">
@@ -328,7 +340,7 @@ Pay Attention
 </table>
 </div>
 </div>
-<p><br> La query può essere quella di sotto. È impostata come un <code>LEFT JOIN</code>, in modo da mostrare tutte le righe della tabella di sinistra, anche se non trovano corrispondenza nella tabella di destra.</p>
+<p><br> The query below uses a <code>LEFT JOIN</code> so that all rows from the left table appear in the output, even if they have no match in the right table.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  i.<span class="op">*</span>,</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  r.city_code</span>
@@ -345,12 +357,12 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Nota</strong>: l’uso di <code>read_csv_auto</code> nella query di sopra è una funzionalità di <a href="https://duckdb.org/"><strong>DuckDB</strong></a> che consente di leggere direttamente file CSV senza doverli importare prima in una tabella. In questo modo è possibile fare esperimenti veloci senza dover creare tabelle temporanee.</p>
+<p><strong>Note</strong>: <code>read_csv_auto</code> is a <a href="https://duckdb.org/"><strong>DuckDB</strong></a> function that reads CSV files directly without importing them into a table first. This makes quick experiments easy — no temporary tables needed.</p>
 </div>
 </div>
-<p>In output otteniamo un pessimo risultato: nessuna delle righe della tabella di sinistra trova corrispondenza nella tabella di destra, e quindi il campo <code>city_code</code> risulta sempre <code>NULL</code>.</p>
+<p>The result is disappointing: none of the rows find a match, so <code>city_code</code> is always <code>NULL</code>.</p>
 <table class="table-striped small table-sm caption-top table">
-<caption>Risultato di un join tra dati errati e dati ufficiali</caption>
+<caption>Result of an exact join between messy and official data</caption>
 <thead>
 <tr class="header">
 <th>city</th>
@@ -377,10 +389,10 @@ Note
 </tbody>
 </table>
 </section>
-<section id="fare-il-join-fuzzy" class="level3">
-<h3 class="anchored" data-anchor-id="fare-il-join-fuzzy">Fare il JOIN “fuzzy”</h3>
-<p>Un JOIN “fuzzy”, sfumato, è quello che consente di trovare corrispondenze anche quando i valori non sono esattamente uguali, ma “simili”. Ad esempio, potremmo voler considerare come corrispondenti i nomi di città che differiscono per un solo carattere, o che hanno una distanza di Levenshtein (numero di operazioni necessarie per trasformare una stringa in un’altra) inferiore a una certa soglia.</p>
-<p>Potremmo riscrivere la query di join precedente in questo modo, usando la <a href="https://duckdb.org/docs/stable/sql/functions/text#levenshteins1-s2">funzione <code>levenshtein</code> di DuckDB</a> per il campo <code>city</code> in modo da considererare come corrispondenti i nomi di città che differiscono per al massimo 2 caratteri:</p>
+<section id="the-fuzzy-join" class="level3">
+<h3 class="anchored" data-anchor-id="the-fuzzy-join">The Fuzzy JOIN</h3>
+<p>A “fuzzy” join finds matches even when values are not exactly equal, but merely <em>similar</em>. For example, we could consider city names that differ by just a few characters, using the Levenshtein distance (the minimum number of single-character edits needed to transform one string into another).</p>
+<p>We could rewrite the previous query using DuckDB’s <a href="https://duckdb.org/docs/stable/sql/functions/text#levenshteins1-s2"><code>levenshtein</code> function</a>, matching cities that differ by at most 2 characters:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  i.city <span class="kw">AS</span> input_city,</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  i.region <span class="kw">AS</span> input_region,</span>
@@ -393,14 +405,14 @@ Note
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">ON</span> i.region <span class="op">=</span> r.region</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> levenshtein(i.city, r.city) <span class="op">&lt;=</span> <span class="dv">2</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <table class="table-striped small table-sm caption-top table">
-<caption>Risultato di un join fuzzy tra dati errati e dati ufficiali</caption>
+<caption>Result with Levenshtein distance ≤ 2</caption>
 <colgroup>
-<col style="width: 18%">
-<col style="width: 13%">
-<col style="width: 18%">
-<col style="width: 12%">
-<col style="width: 11%">
-<col style="width: 24%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 21%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -423,12 +435,12 @@ Note
 </tr>
 </tbody>
 </table>
-<p>L’unica città di cui c’è un risulato è soltanto <code>Cefalu'</code>, perché la <strong>distanza</strong> di Levenshtein tra <code>Cefalu'</code> e <code>Cefalù</code> è <strong>2</strong>: sostituzione di <code>u'</code> con <code>ù</code> e rimozione di <code>'</code>.</p>
-<p>Se aumentiamo la soglia a 10, non cambia nulla, perché ad esempio il Comune di <code>Rodengo Saiano</code> è scritto in maiuscolo e con il trattino e la distanza tra <code>RODENGO-SAIANO</code> e <code>Rodengo Saiano</code> è pari a <strong>12</strong>:</p>
+<p>The only match is <code>Cefalu'</code>, because the Levenshtein distance between <code>Cefalu'</code> and <code>Cefalù</code> is <strong>2</strong>: replacing <code>u'</code> with <code>ù</code> and removing <code>'</code>.</p>
+<p>If we increase the threshold to 10, nothing changes — because <code>Rodengo Saiano</code> is written in uppercase with a hyphen, and the distance between <code>RODENGO-SAIANO</code> and <code>Rodengo Saiano</code> is <strong>12</strong>:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SELECT</span> levenshtein<span class="er">(</span><span class="st">'RODENGO-SAIANO'</span><span class="ex">,</span> <span class="st">'Rodengo Saiano'</span><span class="kw">)</span> <span class="ex">AS</span> distance<span class="kw">;</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">12</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Se si imposta la soglia a 15 ne otteniamo in ogni caso soltanto 2, perché il JOIN del campo <code>region</code> non trova corrispondenza tra <code>CALABRIA</code> e <code>Calabria</code>. Quindi dovremmo usare una funzione di distanza tra stringhe anche per il campo <code>region</code>:</p>
+<p>Setting the threshold to 15 gives only 2 matches, because the exact JOIN on <code>region</code> fails between <code>CALABRIA</code> and <code>Calabria</code>. So we need to use a distance function for the <code>region</code> column too:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  i.city <span class="kw">AS</span> input_city,</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  i.region <span class="kw">AS</span> input_region,</span>
@@ -440,16 +452,16 @@ Note
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> read_csv_auto(<span class="st">'ref_sample.csv'</span>) <span class="kw">AS</span> r</span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">ON</span> levenshtein(i.city, r.city) <span class="op">&lt;=</span> <span class="dv">15</span></span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> levenshtein(<span class="fu">LOWER</span>(i.region), <span class="fu">LOWER</span>(r.region)) <span class="op">&lt;</span> <span class="dv">10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Ma è l’<strong>output non è</strong> proprio <strong>quello che ci aspettiamo</strong>, non 3 righe in totale (una per ogni Comune), ma <strong>ben 8 righe</strong>:</p>
+<p>But the output is <strong>not what we expect</strong> — not 3 rows (one per municipality), but <strong>8 rows</strong>:</p>
 <table class="table-striped small table-sm caption-top table">
-<caption>Risultato di un join fuzzy tra dati errati e dati ufficiali</caption>
+<caption>Result of a fuzzy join with permissive thresholds</caption>
 <colgroup>
-<col style="width: 17%">
-<col style="width: 13%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 15%">
 <col style="width: 21%">
-<col style="width: 12%">
-<col style="width: 11%">
-<col style="width: 23%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -528,18 +540,18 @@ Note
 </tr>
 </tbody>
 </table>
-<p>Quando si esegue un JOIN esatto, l’obiettivo è trovare una singola e chiara corrispondenza per ogni riga. Nel mondo del “fuzzy matching”, le regole cambiano. Abbassando le nostre pretese con soglie di distanza permissive, non stiamo più chiedendo al database “trova l’unica corrispondenza giusta”, ma piuttosto:</p>
+<p>With exact joins, the goal is to find a single clear match for each row. In the world of fuzzy matching, the rules change. By using permissive distance thresholds, we are no longer asking the database <em>“find the one correct match”</em>, but rather:</p>
 <blockquote class="blockquote">
-<p>Per ogni riga del mio input, trovami tutte le righe nel file di riferimento che soddisfano questi criteri di somiglianza generici.</p>
+<p>For each input row, find <strong>all</strong> reference rows that satisfy these loose similarity criteria.</p>
 </blockquote>
-<p>Se una riga di input è “vagamente simile” a più righe di riferimento, il database creerà una riga di output per ciascuna di queste coincidenze. Questo effetto di moltiplicazione è noto come <strong>prodotto cartesiano</strong> delle coincidenze.</p>
-<p>Dopo aver generato le possibili corrispondenze, dovremmo filtrarle per tenere solo la migliore per ogni record di partenza. Il processo può essere suddiviso in tre fasi:</p>
-<ul>
-<li>trovare tutte le possibili corrispondenze e calcolare le distanze</li>
-<li>assegnare un rango a ciascuna corrispondenza in base alla somma delle distanze</li>
-<li>selezionare solo la corrispondenza con il rango più alto (cioè la più simile)</li>
-</ul>
-<div class="sourceCode" id="cb5"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Fase 1: trova tutti i candidati e calcola le distanze</span></span>
+<p>If an input row is “somewhat similar” to multiple reference rows, the database creates an output row for each. This multiplication effect is known as a <strong>Cartesian product</strong> of matches.</p>
+<p>After generating all possible matches, we need to <strong>filter them</strong> to keep only the best one per input record. The process has three phases:</p>
+<ol type="1">
+<li>Find all possible matches and calculate distances</li>
+<li>Rank each match by total distance</li>
+<li>Select only the top-ranked match (the most similar)</li>
+</ol>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Phase 1: find all candidates and calculate distances</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WITH</span> all_matches <span class="kw">AS</span> (</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        i.city <span class="kw">AS</span> input_city,</span>
@@ -554,7 +566,7 @@ Note
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>      <span class="kw">ON</span> levenshtein(i.city, r.city) <span class="op">&lt;=</span> <span class="dv">15</span></span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>     <span class="kw">AND</span> levenshtein(i.region, r.region) <span class="op">&lt;</span> <span class="dv">10</span></span>
 <span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>),</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co">-- Fase 2: assegna un rango ai candidati</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co">-- Phase 2: rank the candidates</span></span>
 <span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>ranked_matches <span class="kw">AS</span> (</span>
 <span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span></span>
 <span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span>,</span>
@@ -564,7 +576,7 @@ Note
 <span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        ) <span class="kw">AS</span> rn</span>
 <span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> all_matches</span>
 <span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co">-- Fase 3: prendi solo il miglior candidato (rn = 1)</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co">-- Phase 3: keep only the best candidate (rn = 1)</span></span>
 <span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
 <span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    input_city,</span>
 <span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    input_region,</span>
@@ -576,15 +588,15 @@ Note
 <span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ranked_matches</span>
 <span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> rn <span class="op">=</span> <span class="dv">1</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <table class="table-striped small table-sm caption-top table">
-<caption>Risultato di un join fuzzy, con selezione della migliore corrispondenza</caption>
+<caption>Result of a fuzzy join, selecting the best match</caption>
 <colgroup>
-<col style="width: 15%">
-<col style="width: 12%">
-<col style="width: 19%">
-<col style="width: 11%">
-<col style="width: 10%">
-<col style="width: 14%">
-<col style="width: 15%">
+<col style="width: 13%">
+<col style="width: 13%">
+<col style="width: 13%">
+<col style="width: 13%">
+<col style="width: 13%">
+<col style="width: 17%">
+<col style="width: 17%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -628,14 +640,14 @@ Note
 </tbody>
 </table>
 </section>
-<section id="una-sintesi-per-ridurre-le-distanze" class="level3 page-columns page-full">
-<h3 class="anchored" data-anchor-id="una-sintesi-per-ridurre-le-distanze">Una sintesi per ridurre le distanze</h3>
-<p>A seguira una tabellina di riepilogo, sull’esempio del nome del <a href="https://www.wikiwand.com/en/articles/Forza_d'Agr%C3%B2">Comune di <code>Forza·d'Agrò</code></a>, scritto però in modo errato <code>Forza··D’Agro·</code>:</p>
+<section id="reducing-distances-with-normalization" class="level3 page-columns page-full">
+<h3 class="anchored" data-anchor-id="reducing-distances-with-normalization">Reducing Distances with Normalization</h3>
+<p>Here is a summary using the Italian municipality of <a href="https://www.wikiwand.com/en/articles/Forza_d'Agr%C3%B2"><code>Forza d'Agro</code></a>, written incorrectly as <code>Forza  D'Agro</code>:</p>
 <ul>
-<li>c’è la <code>D</code> maiuscola invece che minuscola;</li>
-<li>ci sono due spazi in eccesso (uno tra <code>Forza</code> e <code>D'Agro</code> e uno alla fine);</li>
-<li>non c’è la <code>o</code> accentata, ma una <code>o</code> normale;</li>
-<li>c’è un apostrofo tipografico <code>’</code>, invece di uno dritto <code>'</code>.</li>
+<li>uppercase <code>D</code> instead of lowercase</li>
+<li>two extra spaces (one between <code>Forza</code> and <code>D'Agro</code>, one trailing)</li>
+<li>no accent on the <code>o</code></li>
+<li>a typographic apostrophe <code>\u2019</code> instead of a straight one <code>'</code></li>
 </ul>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -647,13 +659,13 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Nota</strong>: qui sopra sono stati resi visibili gli spazi in eccesso con il carattere <code>·</code>.</p>
+<p><strong>Note</strong>: spaces are shown as <code>·</code> for visibility.</p>
 </div>
 </div>
 <div class="column-body-outset">
 <div class="table-responsive">
 <table class="table-striped table-sm table-bordered small caption-top table">
-<caption>Riduzione della distanza con passaggi successivi di normalizzazione</caption>
+<caption>Reducing Levenshtein distance through normalization steps</caption>
 <colgroup>
 <col style="width: 20%">
 <col style="width: 15%">
@@ -663,65 +675,67 @@ Note
 </colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: left;">descrizione</th>
+<th style="text-align: left;">description</th>
 <th style="text-align: left;">left</th>
 <th style="text-align: left;">right</th>
-<th style="text-align: right;">distanza</th>
-<th style="text-align: left;">funzione aggiunta</th>
+<th style="text-align: right;">distance</th>
+<th style="text-align: left;">function applied</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">Inizio</td>
-<td style="text-align: left;"><code>Forza··D’Agro·</code></td>
-<td style="text-align: left;"><code>Forza·d'Agrò</code></td>
+<td style="text-align: left;">Start</td>
+<td style="text-align: left;"><code>Forza··D\u2019Agro·</code></td>
+<td style="text-align: left;"><code>Forza·d'Agr\u00f2</code></td>
 <td style="text-align: right;">7</td>
 <td style="text-align: left;"></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">In minuscolo</td>
-<td style="text-align: left;"><code>forza··d’agro·</code></td>
-<td style="text-align: left;"><code>forza·d'agrò</code></td>
+<td style="text-align: left;">Lowercase</td>
+<td style="text-align: left;"><code>forza··d\u2019agro·</code></td>
+<td style="text-align: left;"><code>forza·d'agr\u00f2</code></td>
 <td style="text-align: right;">6</td>
 <td style="text-align: left;"><code>LOWER('value')</code></td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Rimossi spazi ridondanti</td>
-<td style="text-align: left;"><code>forza·d’agro</code></td>
-<td style="text-align: left;"><code>forza·d'agrò</code></td>
+<td style="text-align: left;">Trim + collapse spaces</td>
+<td style="text-align: left;"><code>forza·d\u2019agro</code></td>
+<td style="text-align: left;"><code>forza·d'agr\u00f2</code></td>
 <td style="text-align: right;">5</td>
 <td style="text-align: left;"><code>regexp_replace(trim(LOWER('value')), '\s+', ' ')</code></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Rimossi accentati</td>
-<td style="text-align: left;"><code>forza·d’agro</code></td>
+<td style="text-align: left;">Strip accents</td>
+<td style="text-align: left;"><code>forza·d\u2019agro</code></td>
 <td style="text-align: left;"><code>forza·d'agro</code></td>
 <td style="text-align: right;">3</td>
-<td style="text-align: left;"><code>strip_accents(regexp_replace(trim(LOWER('value')), '\s+', ' '))</code></td>
+<td style="text-align: left;"><code>strip_accents(...)</code></td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Rimossi caratteri speciali</td>
+<td style="text-align: left;">Keep only alphanumeric</td>
 <td style="text-align: left;"><code>forza·dagro</code></td>
 <td style="text-align: left;"><code>forza·dagro</code></td>
 <td style="text-align: right;">0</td>
-<td style="text-align: left;"><code>regexp_replace(strip_accents(regexp_replace(trim(LOWER('value')), '\s+', ' ')), '[^a-zA-Z0-9 ]', '', 'g')</code></td>
+<td style="text-align: left;"><code>regexp_replace(..., '[^a-zA-Z0-9 ]', '', 'g')</code></td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<p><br> 👉 Quindi <strong>un caso molto brutto</strong>, pieno di errori, può essere normalizzato in modo da <strong>ridurre</strong> la <strong>distanza</strong> di Levenshtein a <strong>zero</strong>, e quindi trovare la corrispondenza esatta e <code>Forza··D'Agro·</code> è uguale a <code>Forza·d'Agrò</code> e quindi riesco a ricavarne il codice identificativo.</p>
+<p><br></p>
+<p>So even a <strong>really messy</strong> value, full of errors, can be normalized to <strong>reduce the distance to zero</strong> — meaning <code>Forza  D\u2019Agro</code> becomes equivalent to <code>Forza d'Agr\u00f2</code> and we can retrieve its identifier code.</p>
 </section>
 </section>
-<section id="note-finali" class="level2">
-<h2 class="anchored" data-anchor-id="note-finali">Note finali</h2>
-<p>In questo percorso abbiamo descritto alcuni elementi di base per misurare la “distanza” tra le stringhe e a normalizzare il testo per rendere il confronto più efficace. Abbiamo visto come gestire maiuscole/minuscole, spazi superflui, accenti e caratteri speciali, che sono gli elementi di base di ogni processo di pulizia dei dati.</p>
-<p>Tuttavia, questo è solo l’inizio. Il mondo del “fuzzy matching” è molto più vasto e complesso. Per affrontare dataset più grandi e “disordinati”, si ricorre spesso a metodi più sofisticati, che vanno oltre il semplice conteggio delle modifiche:</p>
+<section id="what-comes-next" class="level2">
+<h2 class="anchored" data-anchor-id="what-comes-next">What Comes Next</h2>
+<p>In this walkthrough we covered the basics of measuring string distance and normalizing text for more effective comparison: case, whitespace, accents, and special characters.</p>
+<p>However, this is just the beginning. The fuzzy matching world is much broader. For larger and messier datasets, more sophisticated methods exist:</p>
 <ul>
-<li>Algoritmi fonetici: Invece di guardare come sono scritte le parole, questi algoritmi le codificano in base a come suonano. Metodi come Metaphone o Soundex sono bravissimi a capire che “Smith” e “Smythe” sono probabilmente la stessa cosa.</li>
-<li>Modelli statistici (n-gram): Questi metodi scompongono le stringhe in piccole parti (es. coppie o triplette di caratteri) e ne confrontano la frequenza, risultando molto efficaci nel trovare somiglianze anche quando l’ordine delle parole è diverso.</li>
+<li><strong>Phonetic algorithms</strong>: Instead of looking at how words are spelled, these encode words by how they <em>sound</em>. Methods like Metaphone or Soundex excel at recognizing that “Smith” and “Smythe” are probably the same thing.</li>
+<li><strong>Statistical models (n-grams)</strong>: These break strings into small fragments (pairs or triplets of characters) and compare their frequency, which is very effective at finding similarities even when word order differs.</li>
 </ul>
-<p>Strumenti di pulizia dati come <a href="https://openrefine.org/">OpenRefine</a> integrano decine di questi algoritmi avanzati, permettendo di raggruppare e correggere dati simili con grande efficacia.</p>
+<p>Data cleaning tools like <a href="https://openrefine.org/">OpenRefine</a> integrate dozens of these advanced algorithms, allowing you to cluster and correct similar data with great effectiveness.</p>
+<p><strong>Tometo Tomato wraps all of this complexity into a single command.</strong> See the <a href="../doc_sources/use-case-guide.html">Use Case Guide</a> for the complete step-by-step workflow.</p>
 
 
 </section>
@@ -1144,8 +1158,8 @@ Note
       &nbsp;
     </div>   
     <div class="nav-footer-center">
-<p>Lorem ipsum</p>
-</div>
+<p><a href="https://github.com/aborruso/tometo_tomato">GitHub</a> | Fuzzy join for messy CSV data</p>
+<div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/aborruso/tometo_tomato/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div>
     <div class="nav-footer-right">
       &nbsp;
     </div>

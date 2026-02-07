@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Installazione – Tometo Tomato</title>
+<title>Installation – Tometo Tomato</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -129,8 +129,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../doc_sources/about.html"> 
-<span class="menu-text">About</span></a>
+    <a class="nav-link" href="../doc_sources/introduction.html"> 
+<span class="menu-text">Why</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../doc_sources/install.html" aria-current="page"> 
+<span class="menu-text">Install</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../doc_sources/use-case-guide.html"> 
+<span class="menu-text">Use Case Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../doc_sources/cli-reference.html"> 
+<span class="menu-text">CLI Reference</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -148,19 +160,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#prerequisiti" id="toc-prerequisiti" class="nav-link active" data-scroll-target="#prerequisiti">Prerequisiti</a></li>
-  <li><a href="#metodo-1-installazione-per-sviluppo-da-sorgente" id="toc-metodo-1-installazione-per-sviluppo-da-sorgente" class="nav-link" data-scroll-target="#metodo-1-installazione-per-sviluppo-da-sorgente">Metodo 1: Installazione per Sviluppo (da sorgente)</a></li>
-  <li><a href="#metodo-2-installazione-come-tool-globale-con-uv-tool-install" id="toc-metodo-2-installazione-come-tool-globale-con-uv-tool-install" class="nav-link" data-scroll-target="#metodo-2-installazione-come-tool-globale-con-uv-tool-install">Metodo 2: Installazione come Tool Globale (con <code>uv tool install</code>)</a></li>
-  <li><a href="#verifica-dellinstallazione" id="toc-verifica-dellinstallazione" class="nav-link" data-scroll-target="#verifica-dellinstallazione">Verifica dell’Installazione</a></li>
+  <li><a href="#prerequisites" id="toc-prerequisites" class="nav-link active" data-scroll-target="#prerequisites">Prerequisites</a></li>
+  <li><a href="#method-1-install-from-source-for-development" id="toc-method-1-install-from-source-for-development" class="nav-link" data-scroll-target="#method-1-install-from-source-for-development">Method 1: Install from Source (for Development)</a></li>
+  <li><a href="#method-2-install-as-a-global-tool-with-uv-tool-install" id="toc-method-2-install-as-a-global-tool-with-uv-tool-install" class="nav-link" data-scroll-target="#method-2-install-as-a-global-tool-with-uv-tool-install">Method 2: Install as a Global Tool (with <code>uv tool install</code>)</a></li>
+  <li><a href="#verify-the-installation" id="toc-verify-the-installation" class="nav-link" data-scroll-target="#verify-the-installation">Verify the Installation</a></li>
   </ul>
-</nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/aborruso/tometo_tomato/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Installazione</h1>
+<h1 class="title">Installation</h1>
 </div>
 
 
@@ -177,42 +189,46 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>Questo documento spiega come installare il tool <code>tometo_tomato</code> sul tuo sistema.</p>
-<section id="prerequisiti" class="level2">
-<h2 class="anchored" data-anchor-id="prerequisiti">Prerequisiti</h2>
-<p>Assicurati di avere installato <a href="https://www.python.org/">Python</a> (versione 3.8 o superiore). Per una gestione efficiente dei pacchetti, raccomandiamo l’uso di <a href="https://astral.sh/uv">uv</a>, un tool moderno e veloce.</p>
+<section id="prerequisites" class="level2">
+<h2 class="anchored" data-anchor-id="prerequisites">Prerequisites</h2>
+<p>Make sure you have <a href="https://www.python.org/">Python</a> (version 3.8 or higher) installed.</p>
+<p>For efficient package management, we recommend <a href="https://astral.sh/uv">uv</a> — a modern and fast tool for managing Python environments.</p>
 </section>
-<section id="metodo-1-installazione-per-sviluppo-da-sorgente" class="level2">
-<h2 class="anchored" data-anchor-id="metodo-1-installazione-per-sviluppo-da-sorgente">Metodo 1: Installazione per Sviluppo (da sorgente)</h2>
-<p>Questo metodo è ideale se intendi contribuire al progetto o modificarne il codice.</p>
+<section id="method-1-install-from-source-for-development" class="level2">
+<h2 class="anchored" data-anchor-id="method-1-install-from-source-for-development">Method 1: Install from Source (for Development)</h2>
+<p>This method is ideal if you want to contribute to the project or modify the code.</p>
 <ol type="1">
-<li><p><strong>Clona il repository:</strong> <code>bash     git clone https://github.com/aborruso/tometo_tomato.git</code></p></li>
-<li><p><strong>Naviga nella directory del progetto:</strong> <code>bash     cd tometo_tomato</code></p></li>
-<li><p><strong>Installa le dipendenze:</strong></p>
+<li><p><strong>Clone the repository:</strong></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/aborruso/tometo_tomato.git</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
+<li><p><strong>Navigate to the project directory:</strong></p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> tometo_tomato</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
+<li><p><strong>Install dependencies:</strong></p>
 <ul>
-<li><p><strong>Con <code>uv</code> (raccomandato):</strong> <code>bash     uv pip install -e .</code> Questo installerà il pacchetto in modalità “editabile”, permettendoti di vedere immediatamente le modifiche al codice senza dover reinstallare.</p></li>
-<li><p><strong>Con <code>pip</code>:</strong> <code>bash     pip install -e .</code></p></li>
+<li><p><strong>With <code>uv</code> (recommended):</strong></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> sync</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This creates a virtual environment and installs the package in editable mode, so code changes take effect immediately.</p></li>
+<li><p><strong>With <code>pip</code>:</strong></p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> .</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
 </ul>
-<p>Se non intendi modificare il codice, puoi omettere il flag <code>-e</code>:</p>
-<ul>
-<li><code>uv pip install .</code></li>
-<li><code>pip install .</code></li>
-</ul></li>
+<p>If you don’t plan to modify the code, you can omit the <code>-e</code> flag:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install .</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
 </ol>
 </section>
-<section id="metodo-2-installazione-come-tool-globale-con-uv-tool-install" class="level2">
-<h2 class="anchored" data-anchor-id="metodo-2-installazione-come-tool-globale-con-uv-tool-install">Metodo 2: Installazione come Tool Globale (con <code>uv tool install</code>)</h2>
-<p>Se vuoi semplicemente usare <code>tometo_tomato</code> come un comando da riga di comando senza preoccuparti della gestione del codice sorgente o degli ambienti virtuali, <code>uv tool install</code> è la soluzione più pulita.</p>
+<section id="method-2-install-as-a-global-tool-with-uv-tool-install" class="level2">
+<h2 class="anchored" data-anchor-id="method-2-install-as-a-global-tool-with-uv-tool-install">Method 2: Install as a Global Tool (with <code>uv tool install</code>)</h2>
+<p>If you just want to use <code>tometo_tomato</code> as a command-line tool without managing source code or virtual environments, <code>uv tool install</code> is the cleanest option.</p>
 <ol type="1">
-<li><strong>Assicurati di avere <code>uv</code> installato.</strong></li>
-<li><strong>Installa il tool:</strong> <code>bash     uv tool install tometo_tomato</code> Questo comando installerà <code>tometo_tomato</code> in un ambiente isolato gestito da <code>uv</code> e lo renderà disponibile nel tuo PATH.</li>
+<li><p><strong>Make sure you have <code>uv</code> installed.</strong></p></li>
+<li><p><strong>Install the tool:</strong></p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> tool install tometo_tomato</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This installs <code>tometo_tomato</code> in an isolated environment managed by <code>uv</code> and makes it available on your PATH.</p></li>
 </ol>
 </section>
-<section id="verifica-dellinstallazione" class="level2">
-<h2 class="anchored" data-anchor-id="verifica-dellinstallazione">Verifica dell’Installazione</h2>
-<p>Dopo aver completato uno dei metodi di installazione, puoi verificare che <code>tometo_tomato</code> sia correttamente installato eseguendo:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tometo_tomato</span> <span class="at">--version</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Dovresti vedere la versione del tool stampata a schermo.</p>
+<section id="verify-the-installation" class="level2">
+<h2 class="anchored" data-anchor-id="verify-the-installation">Verify the Installation</h2>
+<p>After completing any of the installation methods, verify that <code>tometo_tomato</code> is installed correctly:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tometo_tomato</span> <span class="at">--version</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>You should see the version number printed on screen.</p>
 
 
 </section>
@@ -629,8 +645,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       &nbsp;
     </div>   
     <div class="nav-footer-center">
-<p>Lorem ipsum</p>
-</div>
+<p><a href="https://github.com/aborruso/tometo_tomato">GitHub</a> | Fuzzy join for messy CSV data</p>
+<div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/aborruso/tometo_tomato/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div>
     <div class="nav-footer-right">
       &nbsp;
     </div>

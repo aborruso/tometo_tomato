@@ -10,18 +10,28 @@ resources:
   - files/input.csv
   - files/ref.csv
   - files/ref_sample.csv
+  - files/work_file.csv
+  - files/reference.csv
 
 website:
   title: "Tometo Tomato"
+  repo-url: https://github.com/aborruso/tometo_tomato
+  repo-actions: [issue]
   navbar:
     left:
       - href: index.qmd
         text: Home
-      - href: doc_sources/about.qmd
-        text: About
+      - href: doc_sources/introduction.qmd
+        text: Why
+      - href: doc_sources/install.qmd
+        text: Install
+      - href: doc_sources/use-case-guide.qmd
+        text: Use Case Guide
+      - href: doc_sources/cli-reference.qmd
+        text: CLI Reference
 
   page-footer:
-    center: "Lorem ipsum"
+    center: "[GitHub](https://github.com/aborruso/tometo_tomato) | Fuzzy join for messy CSV data"
 
 format:
   html:
@@ -29,5 +39,3 @@ format:
     css: styles.css
     toc: true
     link-external-newwindow: true
-
-# Do not set a site language for now; use Quarto default (English)
