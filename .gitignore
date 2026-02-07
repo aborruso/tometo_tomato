@@ -9,6 +9,7 @@ data/processed/
 data/interim/
 tests/__pycache__/
 dist/
+src/_version.py
 
 # Quarto
 _site/
