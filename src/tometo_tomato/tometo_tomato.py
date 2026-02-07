@@ -477,10 +477,12 @@ def main():
 
     input_clean_cols_sql = []
     ref_clean_cols_sql = []
+    inp_clean_col_names = []
     for pair in join_pairs:
         inp_col, ref_col = [c.strip().replace('"', '').replace("'", "") for c in pair.split(",")]
         input_clean_cols_sql.append(f"{_build_clean_expr('inp', inp_col)} AS \"{inp_col}_clean\"")
         ref_clean_cols_sql.append(f"{_build_clean_expr('ref', ref_col)} AS \"{ref_col}_clean\"")
+        inp_clean_col_names.append(f'"{inp_col}_clean"')
 
     con.execute(f"""
         CREATE TEMP VIEW input_preproc AS
@@ -498,21 +500,57 @@ def main():
         FROM read_csv_auto('{args.reference_file}', header=true, all_varchar=true) AS ref;
     """)
 
+    # ------------------------------------------------------------------
+    # DISTINCT optimization: deduplicate input join keys before the
+    # expensive CROSS JOIN so fuzzy matching runs only on unique combos.
+    # ------------------------------------------------------------------
+    clean_cols_csv = ', '.join(inp_clean_col_names)
+    block_key_col = ', block_key' if args.block_prefix and args.block_prefix > 0 else ''
+
+    con.execute(f"""
+        CREATE TEMP VIEW input_keys AS
+        SELECT ROW_NUMBER() OVER () AS key_id, t.*
+        FROM (
+            SELECT DISTINCT {clean_cols_csv}{block_key_col}
+            FROM input_preproc
+        ) t;
+    """)
+
+    join_on_clauses = ' AND '.join(
+        [f'ip.{col} IS NOT DISTINCT FROM ik.{col}' for col in inp_clean_col_names]
+    )
+    if args.block_prefix and args.block_prefix > 0:
+        join_on_clauses += ' AND ip.block_key IS NOT DISTINCT FROM ik.block_key'
+
+    con.execute(f"""
+        CREATE TEMP VIEW input_key_map AS
+        SELECT ip.input_id, ik.key_id
+        FROM input_preproc ip
+        JOIN input_keys ik ON {join_on_clauses};
+    """)
+
     if args.block_prefix and args.block_prefix > 0:
         con.execute(f"""
-            CREATE TEMP VIEW all_scores AS
-            SELECT inp.input_id, ref.*, {avg_score_expr} AS avg_score
+            CREATE TEMP VIEW key_scores AS
+            SELECT inp.key_id, ref.*, {avg_score_expr} AS avg_score
             FROM ref_preproc AS ref
-            JOIN input_preproc AS inp
+            JOIN input_keys AS inp
               ON ref.block_key = inp.block_key;
         """)
     else:
         con.execute(f"""
-            CREATE TEMP VIEW all_scores AS
-            SELECT inp.input_id, ref.*, {avg_score_expr} AS avg_score
+            CREATE TEMP VIEW key_scores AS
+            SELECT inp.key_id, ref.*, {avg_score_expr} AS avg_score
             FROM ref_preproc AS ref
-            CROSS JOIN input_preproc AS inp;
+            CROSS JOIN input_keys AS inp;
         """)
+
+    con.execute(f"""
+        CREATE TEMP VIEW all_scores AS
+        SELECT ikm.input_id, ks.* EXCLUDE (key_id)
+        FROM input_key_map ikm
+        JOIN key_scores ks ON ikm.key_id = ks.key_id;
+    """)
 
     con.execute(f"""
         CREATE TEMP VIEW best_matches AS
