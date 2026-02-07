@@ -1,0 +1,290 @@
+---
+title: "Use Case Guide: Cleaning Dirty Data with a Reference Table"
+---
+
+## The Problem
+
+You have a CSV file where one or more columns contain **messy values**: typos, missing characters, inconsistent capitalization. A typical example is a column of city or municipality names entered by hand.
+
+You also have an **authoritative reference file** — an official list with the correct names and additional attributes (such as codes or identifiers) that you need to bring into your working file.
+
+The challenge: a regular join fails because the values do not match exactly. `tometo_tomato` solves this with a **fuzzy join** — it finds the best approximate match for each row, even when the text is not identical.
+
+## The Workflow
+
+The process has two steps:
+
+```
+ Your file          Reference file
+ (dirty data)       (ground truth)
+     │                    │
+     └──── tometo_tomato ─┘
+                │
+          Mapping table
+          (dirty → clean)
+                │
+     ┌── exact join (duckdb) ──┐
+     │                         │
+ Your file               Corrected file
+ (original)              (enriched)
+```
+
+**Step 1.** Run `tometo_tomato` to produce a **mapping table** that links each dirty value to its best match in the reference file.
+
+**Step 2.** Use a standard exact join (for example with [DuckDB](https://duckdb.org)) to bring the corrections back into your original file.
+
+## Example A: Single Join Column
+
+### The data
+
+**Your working file** (`work_simple.csv`):
+
+| municipality | amount |
+|---|---|
+| Roma | 1500 |
+| Rma | 2300 |
+| Milno | 800 |
+| Milano | 1200 |
+| Npoli | 950 |
+
+**Reference file** (`reference_simple.csv`):
+
+| municipality_name | istat_code |
+|---|---|
+| Roma | 058091 |
+| Milano | 015146 |
+| Napoli | 063049 |
+
+### Step 1: Generate the mapping
+
+```bash
+tometo_tomato work_simple.csv reference_simple.csv \
+  -j "municipality,municipality_name" \
+  -a istat_code \
+  -s -t 70 \
+  -o mapping.csv
+```
+
+Flags explained:
+
+- `-j "municipality,municipality_name"` — the pair of columns to compare (input column, reference column)
+- `-a istat_code` — an extra column from the reference file to include in the output
+- `-s` — show the similarity score
+- `-t 70` — minimum similarity threshold (0-100)
+- `-o mapping.csv` — output file path
+
+**Result** (`mapping.csv`):
+
+| municipality | ref_municipality_name | istat_code | avg_score |
+|---|---|---|---|
+| Roma | Roma | 058091 | 100.0 |
+| Rma | Roma | 058091 | 85.7 |
+| Milano | Milano | 015146 | 100.0 |
+| Milno | Milano | 015146 | 90.9 |
+| Npoli | Napoli | 063049 | 90.9 |
+
+Each row in the mapping connects a **dirty value** to the **best matching reference value**. The `avg_score` column shows how confident the match is (100 = perfect).
+
+### Step 2: Join back to your original file
+
+```bash
+duckdb -c "
+COPY (
+  SELECT
+    w.*,
+    m.ref_municipality_name AS municipality_correct,
+    m.istat_code,
+    ROUND(m.avg_score, 1) AS score
+  FROM read_csv_auto('work_simple.csv') w
+  JOIN read_csv_auto('mapping.csv') m
+    ON w.municipality = m.municipality
+  ORDER BY w.id
+) TO 'work_corrected.csv' (HEADER);
+"
+```
+
+The join condition is `w.municipality = m.municipality` — an **exact join on the dirty column**. This works because the mapping table contains exactly the original (dirty) values from your file.
+
+**Result** (`work_corrected.csv`):
+
+| municipality | amount | municipality_correct | istat_code | score |
+|---|---|---|---|---|
+| Roma | 1500 | Roma | 058091 | 100.0 |
+| Rma | 2300 | Roma | 058091 | 85.7 |
+| Milno | 800 | Milano | 015146 | 90.9 |
+| Milano | 1200 | Milano | 015146 | 100.0 |
+| Npoli | 950 | Napoli | 063049 | 90.9 |
+
+Every row in your original file now has the correct municipality name and its ISTAT code.
+
+## Example B: Multi-Column Join (Disambiguation)
+
+### Why a single column is not always enough
+
+Some municipality names exist in **multiple regions**. For example, in Italy:
+
+| Municipality | Region | ISTAT Code |
+|---|---|---|
+| Castro | **Puglia** | 075019 |
+| Castro | **Lombardia** | 016065 |
+| Samone | **Trentino-Alto Adige** | 022164 |
+| Samone | **Piemonte** | 001244 |
+
+If you match only on the municipality name, "Castro" in Puglia could be incorrectly linked to "Castro" in Lombardia. You need a **second column** — the region — to disambiguate.
+
+### The data
+
+**Your working file** ([`work_file.csv`](files/work_file.csv)):
+
+```csv
+id,municipality,region,amount
+1,San Valentino in Abruzzo Citeriore,Abrzzo,1500
+2,San Valentino Torio,Campnia,2300
+3,Castro,Pugla,800
+4,Castro,Lombardia,1200
+5,Samone,Trntino-Alto Adige,950
+6,Samone,Piemonte,3100
+7,Calliano,Trentno-Alto Adige,400
+8,Calliano,Piemnte,2750
+9,Livo,Trentno-Alto Adige,1800
+10,Livo,Lombardia,600
+```
+
+Notice the typos in the `region` column: "Abrzzo", "Campnia", "Pugla", "Trntino-Alto Adige", "Piemnte".
+
+**Reference file** ([`reference.csv`](files/reference.csv)):
+
+```csv
+municipality_name,region,istat_code
+San Valentino in Abruzzo Citeriore,Abruzzo,068037
+San Valentino Torio,Campania,065131
+Castro,Puglia,075019
+Castro,Lombardia,016065
+Samone,Trentino-Alto Adige,022164
+Samone,Piemonte,001244
+Calliano,Trentino-Alto Adige,022032
+Calliano,Piemonte,005013
+Livo,Trentino-Alto Adige,022107
+Livo,Lombardia,013130
+```
+
+### Step 1: Generate the mapping with two join pairs
+
+```bash
+tometo_tomato work_file.csv reference.csv \
+  -j "municipality,municipality_name" \
+  -j "region,region" \
+  -a istat_code \
+  -s -t 70 \
+  -o mapping.csv
+```
+
+The key difference: the `-j` flag is **repeated** for each column pair. The tool computes a similarity score for each pair and averages them. This means both the municipality name **and** the region must be similar for a match to succeed.
+
+**Result** (`mapping.csv`):
+
+| municipality | region | ref_municipality_name | ref_region | istat_code | avg_score |
+|---|---|---|---|---|---|
+| Castro | Pugla | Castro | Puglia | 075019 | 95.5 |
+| Castro | Lombardia | Castro | Lombardia | 016065 | 100.0 |
+| Samone | Trntino-Alto Adige | Samone | Trentino-Alto Adige | 022164 | 98.6 |
+| Samone | Piemonte | Samone | Piemonte | 001244 | 100.0 |
+| Calliano | Trentno-Alto Adige | Calliano | Trentino-Alto Adige | 022032 | 98.6 |
+| Calliano | Piemnte | Calliano | Piemonte | 005013 | 96.7 |
+
+"Castro, Pugla" correctly maps to "Castro, Puglia" (not Lombardia) because the averaged score on both columns picks the right region.
+
+### Step 2: Join back using both columns
+
+```bash
+duckdb -c "
+COPY (
+  SELECT
+    w.*,
+    m.ref_municipality_name AS municipality_correct,
+    m.ref_region AS region_correct,
+    m.istat_code,
+    ROUND(m.avg_score, 1) AS score
+  FROM read_csv_auto('work_file.csv') w
+  JOIN read_csv_auto('mapping.csv') m
+    ON w.municipality = m.municipality
+    AND w.region = m.region
+  ORDER BY w.id::INT
+) TO 'work_corrected.csv' (HEADER);
+"
+```
+
+The join now uses **both dirty columns**: `ON w.municipality = m.municipality AND w.region = m.region`. This ensures each row maps to exactly one entry in the mapping table.
+
+**Result** (`work_corrected.csv`):
+
+| id | municipality | region | amount | municipality_correct | region_correct | istat_code | score |
+|---|---|---|---|---|---|---|---|
+| 1 | San Valentino in Abruzzo Citeriore | Abrzzo | 1500 | San Valentino in Abruzzo Citeriore | Abruzzo | 068037 | 96.2 |
+| 2 | San Valentino Torio | Campnia | 2300 | San Valentino Torio | Campania | 065131 | 96.7 |
+| 3 | Castro | Pugla | 800 | Castro | Puglia | 075019 | 95.5 |
+| 4 | Castro | Lombardia | 1200 | Castro | Lombardia | 016065 | 100.0 |
+| 5 | Samone | Trntino-Alto Adige | 950 | Samone | Trentino-Alto Adige | 022164 | 98.6 |
+| 6 | Samone | Piemonte | 3100 | Samone | Piemonte | 001244 | 100.0 |
+| 7 | Calliano | Trentno-Alto Adige | 400 | Calliano | Trentino-Alto Adige | 022032 | 98.6 |
+| 8 | Calliano | Piemnte | 2750 | Calliano | Piemonte | 005013 | 96.7 |
+| 9 | Livo | Trentno-Alto Adige | 1800 | Livo | Trentino-Alto Adige | 022107 | 98.6 |
+| 10 | Livo | Lombardia | 600 | Livo | Lombardia | 013130 | 100.0 |
+
+All 10 rows are correctly matched, with the right ISTAT code for each municipality-region pair.
+
+## Tips and Best Practices
+
+### Reviewing low-confidence matches
+
+Use the `score` column to spot matches that might be wrong. A quick check:
+
+```bash
+duckdb -c "
+SELECT * FROM read_csv_auto('mapping.csv')
+WHERE avg_score < 95
+ORDER BY avg_score;
+"
+```
+
+Rows with lower scores deserve manual review.
+
+### Handling ambiguous matches
+
+When two reference rows score equally well for the same input, `tometo_tomato` flags the match as **ambiguous** and excludes it from the clean output to avoid inserting incorrect data. Use `--output-ambiguous` to inspect these cases:
+
+```bash
+tometo_tomato work_file.csv reference.csv \
+  -j "municipality,municipality_name" \
+  -j "region,region" \
+  -a istat_code \
+  -s -t 70 \
+  -o mapping.csv \
+  -u ambiguous.csv
+```
+
+### Unmatched rows
+
+If an input row has no reference match above the threshold, it still appears in the mapping file — but with empty reference columns. This is a LEFT JOIN: **no input row is ever lost**. You can filter these out in Step 2 or handle them separately.
+
+### Choosing the right threshold
+
+- **90-100**: strict, only very close matches (good for clean data with minor typos)
+- **80-90**: moderate, handles abbreviations and missing characters
+- **70-80**: permissive, catches more distant matches but needs manual review
+
+### Performance on large datasets
+
+For large files, use `--block-prefix N` to avoid comparing every pair of rows:
+
+```bash
+tometo_tomato work_file.csv reference.csv \
+  -j "municipality,municipality_name" \
+  -j "region,region" \
+  -a istat_code \
+  --block-prefix 3 \
+  -s -t 70 \
+  -o mapping.csv
+```
+
+This only compares rows where the first 3 characters of the join columns match, dramatically reducing computation time.

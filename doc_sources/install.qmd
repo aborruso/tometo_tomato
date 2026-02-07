@@ -1,62 +1,70 @@
 ---
-title: "Installazione"
+title: "Installation"
 ---
 
-Questo documento spiega come installare il tool `tometo_tomato` sul tuo sistema.
+## Prerequisites
 
-## Prerequisiti
+Make sure you have [Python](https://www.python.org/) (version 3.8 or higher) installed.
 
-Assicurati di avere installato [Python](https://www.python.org/) (versione 3.8 o superiore).
-Per una gestione efficiente dei pacchetti, raccomandiamo l'uso di [uv](https://astral.sh/uv), un tool moderno e veloce.
+For efficient package management, we recommend [uv](https://astral.sh/uv) — a modern and fast tool for managing Python environments.
 
-## Metodo 1: Installazione per Sviluppo (da sorgente)
+## Method 1: Install from Source (for Development)
 
-Questo metodo è ideale se intendi contribuire al progetto o modificarne il codice.
+This method is ideal if you want to contribute to the project or modify the code.
 
-1.  **Clona il repository:**
+1.  **Clone the repository:**
+
     ```bash
     git clone https://github.com/aborruso/tometo_tomato.git
     ```
 
-2.  **Naviga nella directory del progetto:**
+2.  **Navigate to the project directory:**
+
     ```bash
     cd tometo_tomato
     ```
 
-3.  **Installa le dipendenze:**
+3.  **Install dependencies:**
 
-    *   **Con `uv` (raccomandato):**
+    *   **With `uv` (recommended):**
+
         ```bash
-        uv pip install -e .
+        uv sync
         ```
-        Questo installerà il pacchetto in modalità "editabile", permettendoti di vedere immediatamente le modifiche al codice senza dover reinstallare.
 
-    *   **Con `pip`:**
+        This creates a virtual environment and installs the package in editable mode, so code changes take effect immediately.
+
+    *   **With `pip`:**
+
         ```bash
         pip install -e .
         ```
 
-    Se non intendi modificare il codice, puoi omettere il flag `-e`:
-    *   `uv pip install .`
-    *   `pip install .`
+    If you don't plan to modify the code, you can omit the `-e` flag:
 
-## Metodo 2: Installazione come Tool Globale (con `uv tool install`)
+    ```bash
+    pip install .
+    ```
 
-Se vuoi semplicemente usare `tometo_tomato` come un comando da riga di comando senza preoccuparti della gestione del codice sorgente o degli ambienti virtuali, `uv tool install` è la soluzione più pulita.
+## Method 2: Install as a Global Tool (with `uv tool install`)
 
-1.  **Assicurati di avere `uv` installato.**
-2.  **Installa il tool:**
+If you just want to use `tometo_tomato` as a command-line tool without managing source code or virtual environments, `uv tool install` is the cleanest option.
+
+1.  **Make sure you have `uv` installed.**
+2.  **Install the tool:**
+
     ```bash
     uv tool install tometo_tomato
     ```
-    Questo comando installerà `tometo_tomato` in un ambiente isolato gestito da `uv` e lo renderà disponibile nel tuo PATH.
 
-## Verifica dell'Installazione
+    This installs `tometo_tomato` in an isolated environment managed by `uv` and makes it available on your PATH.
 
-Dopo aver completato uno dei metodi di installazione, puoi verificare che `tometo_tomato` sia correttamente installato eseguendo:
+## Verify the Installation
+
+After completing any of the installation methods, verify that `tometo_tomato` is installed correctly:
 
 ```bash
 tometo_tomato --version
 ```
 
-Dovresti vedere la versione del tool stampata a schermo.
+You should see the version number printed on screen.

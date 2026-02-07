@@ -1,0 +1,166 @@
+---
+title: "CLI Reference"
+---
+
+## Synopsis
+
+```bash
+tometo_tomato INPUT_FILE REFERENCE_FILE [OPTIONS]
+```
+
+`INPUT_FILE` is the CSV with messy data. `REFERENCE_FILE` is the CSV with correct, authoritative data.
+
+## Options
+
+### Core
+
+| Flag | Short | Description |
+|---|---|---|
+| `--join-pair COL1,COL2` | `-j` | Column pair to compare (input column, reference column). **Repeatable** for multi-column matching. |
+| `--add-field FIELD` | `-a` | Extra column from the reference file to include in output. Repeatable. |
+| `--output-clean FILE` | `-o` | Path for the clean matches output file. Default: `clean_matches.csv` |
+| `--output-ambiguous FILE` | `-u` | Path for the ambiguous matches file. Only created if ambiguous records exist. |
+| `--threshold N` | `-t` | Minimum similarity score (0-100). Default: `85` |
+| `--show-score` | `-s` | Include the `avg_score` column in the output. |
+| `--force` | `-f` | Overwrite existing output files without prompting. |
+: Core options {.striped}
+
+### Matching Algorithm
+
+| Flag | Short | Description |
+|---|---|---|
+| `--scorer ALGO` | | Fuzzy matching algorithm: `ratio` (default) or `token_set_ratio`. |
+| `--infer-pairs` | `-i` | Automatically infer column pairs from similar header names. |
+| `--infer-threshold N` | `-I` | Similarity threshold (0-1) for header name inference. Default: `0.7` |
+: Matching options {.striped}
+
+### Normalization
+
+By default, `tometo_tomato` normalizes join columns before comparison: converts to lowercase, trims whitespace, and collapses multiple spaces. These flags control that behavior.
+
+| Flag | Short | Description |
+|---|---|---|
+| `--latinize` | | Strip accents and special characters before matching (e.g. `e` = `e`). Original characters are preserved in output. |
+| `--keep-alphanumeric` | `-k` | Remove punctuation and special characters, keeping only letters, numbers, and spaces. |
+| `--raw-case` | | Disable case normalization (case-sensitive matching). |
+| `--raw-whitespace` | | Disable whitespace normalization (no trimming or space collapsing). |
+: Normalization options {.striped}
+
+### Performance
+
+| Flag | Short | Description |
+|---|---|---|
+| `--block-prefix N` | | Only compare records sharing the same first N characters in each join column. Dramatically reduces computation on large datasets. |
+: Performance options {.striped}
+
+### Output Control
+
+| Flag | Short | Description |
+|---|---|---|
+| `--verbose` | `-v` | Increase verbosity. Use `-vv` for debug output. |
+| `--quiet` | `-q` | Suppress all output except errors. |
+| `--version` | | Show version and exit. |
+: Output control options {.striped}
+
+## Examples
+
+### Basic single-column match
+
+```bash
+tometo_tomato work.csv reference.csv \
+  -j "city,city_name" \
+  -a city_code \
+  -s -t 85 \
+  -o mapping.csv
+```
+
+### Multi-column match (disambiguation)
+
+```bash
+tometo_tomato work.csv reference.csv \
+  -j "municipality,municipality_name" \
+  -j "region,region" \
+  -a istat_code \
+  -s -t 70 \
+  -o mapping.csv
+```
+
+### With normalization
+
+```bash
+tometo_tomato work.csv reference.csv \
+  -j "name,ref_name" \
+  --latinize \
+  --keep-alphanumeric \
+  -a code \
+  -s -t 80 \
+  -o mapping.csv
+```
+
+### With blocking for large datasets
+
+```bash
+tometo_tomato work.csv reference.csv \
+  -j "city,city" -j "region,region" \
+  -a city_code \
+  --block-prefix 3 \
+  -s -t 85 \
+  -o mapping.csv
+```
+
+### Token set ratio (word-order independent)
+
+Useful when names have different word counts (e.g. "Reggio Calabria" vs. "Reggio di Calabria"):
+
+```bash
+tometo_tomato work.csv reference.csv \
+  -j "city,city_name" \
+  --scorer token_set_ratio \
+  -s -t 90 \
+  -o mapping.csv
+```
+
+### Automated pipeline (no prompts)
+
+```bash
+tometo_tomato work.csv reference.csv \
+  -j "name,ref_name" \
+  -a code \
+  -t 85 \
+  -o mapping.csv \
+  --force --quiet
+```
+
+### Capture ambiguous matches
+
+```bash
+tometo_tomato work.csv reference.csv \
+  -j "city,city_name" \
+  -a city_code \
+  -s -t 80 \
+  -o mapping.csv \
+  -u ambiguous.csv
+```
+
+## How Scores Work
+
+The `avg_score` column represents the average fuzzy similarity across all join pairs, on a 0-100 scale:
+
+- **100** = perfect match (after normalization)
+- **90-99** = minor differences (a missing character, a typo)
+- **80-89** = moderate differences (abbreviations, missing words)
+- **< 80** = distant matches (manual review recommended)
+
+When using multiple `-j` pairs, the score is the **average** of individual pair scores. For example, with `-j "city,city" -j "region,region"`:
+
+- city score: 100 (exact match)
+- region score: 90.9 ("Pugla" vs "Puglia")
+- avg_score: (100 + 90.9) / 2 = **95.5**
+
+## How Ambiguity Works
+
+A match is **ambiguous** when two or more reference rows achieve the same maximum `avg_score` for a given input row (and that score meets the threshold).
+
+- Ambiguous rows are **excluded** from `--output-clean` to prevent inserting incorrect data
+- Use `--output-ambiguous` to inspect the tied candidates
+- If `--output-ambiguous` is not set, the tool prints a warning with the count of ambiguous records

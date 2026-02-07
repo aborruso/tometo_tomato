@@ -1,22 +1,22 @@
 ---
-title: "Perché è stato creato Tométo Tomato"
+title: "Why Fuzzy Matching?"
 ---
 
-## Introduzione
+## The Problem
 
-Chiunque lavori con i dati molto spesso si imbatte in colonne che dovrebbero rispettare una codifica, un valore standard, una lista di valori noti, ma presentano invece **errori di battitura**, **spazi in eccesso**, **caratteri speciali al posto di caratteri accentati**, **maiuscole/minuscole non coerenti**, ecc..
+Anyone who works with data regularly encounters columns that should follow a standard encoding — an official list of values — but instead contain **typos**, **extra whitespace**, **special characters instead of accented letters**, **inconsistent capitalization**, and so on.
 
-Qui sotto ad esempio dei nomi ci città italiane, riportati in modo errato:
+Here are some Italian city names, written incorrectly:
 
-| city            | tipo di errore    |
-|-----------------|-------------------|
-| Cefalu'         | bisognerebbe usare la `ù` e non `u'`  |
-| Reggio Calabria | Il nome corretto è `Reggio di Calabria` |
-| RODENGO-SAIANO  | bisognerebbe usare `Rodengo Saiano`, senza `-` e non tutto maiuscolo |
-: Esempi di nomi di città errati {.striped .small tbl-colwidths="[30,70]"}
+| city            | type of error |
+|-----------------|---|
+| Cefalu'         | should use `ù` instead of `u'` |
+| Reggio Calabria | the official name is `Reggio di Calabria` |
+| RODENGO-SAIANO  | should be `Rodengo Saiano`, without `-` and not all uppercase |
+: Examples of incorrect city names {.striped .small tbl-colwidths="[30,70]"}
 
 <br>
-Se volessi associare a queste città il codice[^code] che **Istat** - l'istituto nazionale di statistica - assegna a ciascuna città, non potrei farlo con una semplice operazione di join, perché i nomi non corrispondono esattamente. Associare un codice a ciascun comune è operazione molto importante perché mi consente di **unire** dati provenienti da fonti diverse, che altrimenti non potrei confrontare, ma anche di **generare** ad esempio **automaticamente** **mappe**, perché i software spesso usano proprio questi codici per identificare i comuni.
+If you wanted to associate each city with the code[^code] that **ISTAT** — the Italian National Institute of Statistics — assigns to each municipality, a simple exact join would fail because the names don't match. Associating a code to each municipality is very important: it enables you to **link** data from different sources that would otherwise be incomparable, and to **automatically generate maps**, since mapping software often uses these codes to identify municipalities.
 
 [^code]: [Codes of Italian municipalities](https://www.istat.it/en/classification/codes-of-italian-municipalities-provinces-and-regions/)
 
@@ -24,38 +24,37 @@ Se volessi associare a queste città il codice[^code] che **Istat** - l'istituto
 
 ## Pay Attention
 
-Chi fa didattica sui dati di solito infatti dice (urlando): **CODES, NOT LABELS!!**
+Data educators usually shout: **CODES, NOT LABELS!!**
 
 :::
 
-I codici correlati alle unità amministrative italiane sono pubblici e liberamente accessibili in CC-BY-4.0 su diverse sezioni del sito Istat. Uno di questi è il [SITUAS](https://situas.istat.it), in cui c'è la pagina con l'"[**Elenco dei codici e delle denominazioni delle unità territoriali**](https://situas.istat.it/web/#/territorio/body?id=61&dateFrom=2025-08-23)", scaricabili in formato `CSV` e `JSON`.
+The codes for Italian administrative units are public and freely available under CC-BY-4.0 on various sections of the ISTAT website. One source is [SITUAS](https://situas.istat.it), which has a page with the "[**List of codes and names of territorial units**](https://situas.istat.it/web/#/territorio/body?id=61&dateFrom=2025-08-23)", downloadable in `CSV` and `JSON` format.
 
-| city | region    | istat_city_code |
-|-------------------------|------------|----------------------------|
-| Cefalù                  | Sicilia    | 082027                     |
-| Reggio di Calabria      | Calabria   | 080063                     |
-| Rodengo Saiano          | Lombardia  | 017163                     |
-: Esempio di dati ufficiali Istat sui comuni italiani {.striped .small}
-
+| city | region | istat_city_code |
+|---|---|---|
+| Cefalù | Sicilia | 082027 |
+| Reggio di Calabria | Calabria | 080063 |
+| Rodengo Saiano | Lombardia | 017163 |
+: Official ISTAT municipality data {.striped .small}
 
 <br>
-Se provassi a fare un join tra i dati errati e questi dati ufficiali, **non otterrei alcun risultato**.
+If you try to join the incorrect data with this official data, **you get no results**.
 
 ---
 
-👉 Tométo Tomato è stato creato per risolvere questo problema: consente di **fare comodamente** join **non basati su corrispondenze esatte**, ma su **corrispondenze "simili"**, e **arricchire**, **modificare**, **correggere** la propria brutta tabella di input, confrontandola con una tabella di riferimento.
+Tometo Tomato was created to solve this problem: it lets you **easily perform joins** that are not based on exact matches, but on **similarity**, and then **enrich**, **modify**, and **correct** your messy input table by comparing it against a reference table.
 
 ---
 
-### File di esempio
+### Sample Files
 
-Queste sono le nostre due tabelle di esempio, disponibili come [`input.csv`](files/input.csv) e [`ref_sample.csv`](files/ref_sample.csv) in modo che sia possibile scaricarle e provare a eseguire gli esempi.
+These are our two sample tables, available as [`input.csv`](files/input.csv) and [`ref_sample.csv`](files/ref_sample.csv) so you can download them and try the examples yourself.
 
-## Utilizzare SQL
+## Using SQL
 
-### Fare il JOIN
+### The Exact JOIN
 
-Il primo test è quello di lanciare una semplice query SQL di join, per vedere cosa succede a partire dai nostri dati di esempio.
+The first test is to run a simple SQL join query to see what happens with our sample data.
 
 :::::: columns
 ::: {.column width="46%"}
@@ -83,7 +82,7 @@ Il primo test è quello di lanciare una semplice query SQL di join, per vedere c
 ::::::
 
 <br>
-La query può essere quella di sotto. È impostata come un `LEFT JOIN`, in modo da mostrare tutte le righe della tabella di sinistra, anche se non trovano corrispondenza nella tabella di destra.
+The query below uses a `LEFT JOIN` so that all rows from the left table appear in the output, even if they have no match in the right table.
 
 ```sql
 SELECT
@@ -95,26 +94,24 @@ LEFT JOIN read_csv_auto('ref_sample.csv') AS r
 ```
 
 ::: {.callout-note}
-**Nota**: l'uso di `read_csv_auto` nella query di sopra è una funzionalità di [**DuckDB**](https://duckdb.org/) che consente di leggere direttamente file CSV senza doverli importare prima in una tabella. In questo modo è possibile fare esperimenti veloci senza dover creare tabelle temporanee.
+**Note**: `read_csv_auto` is a [**DuckDB**](https://duckdb.org/) function that reads CSV files directly without importing them into a table first. This makes quick experiments easy — no temporary tables needed.
 :::
 
-In output otteniamo un pessimo risultato: nessuna delle righe della tabella di sinistra trova corrispondenza nella tabella di destra, e quindi il campo `city_code` risulta sempre `NULL`.
+The result is disappointing: none of the rows find a match, so `city_code` is always `NULL`.
 
 | city            | region    | istat_city_code |
 |-----------------|-----------|-----------------|
 | Cefalu'         | Sicilia   | NULL            |
 | Reggio Calabria | CALABRIA  | NULL            |
 | RODENGO-SAIANO  | Lombardia | NULL            |
-: Risultato di un join tra dati errati e dati ufficiali {.striped .small}
+: Result of an exact join between messy and official data {.striped .small}
 
 
+### The Fuzzy JOIN
 
-### Fare il JOIN "fuzzy"
+A "fuzzy" join finds matches even when values are not exactly equal, but merely *similar*. For example, we could consider city names that differ by just a few characters, using the Levenshtein distance (the minimum number of single-character edits needed to transform one string into another).
 
-Un JOIN "fuzzy", sfumato, è quello che consente di trovare corrispondenze anche quando i valori non sono esattamente uguali, ma "simili". Ad esempio, potremmo voler considerare come corrispondenti i nomi di città che differiscono per un solo carattere, o che hanno una distanza di Levenshtein (numero di operazioni necessarie per trasformare una stringa in un'altra) inferiore a una certa soglia.
-
-Potremmo riscrivere la query di join precedente in questo modo, usando la [funzione `levenshtein` di DuckDB](https://duckdb.org/docs/stable/sql/functions/text#levenshteins1-s2) per il campo `city` in modo da considererare come corrispondenti i nomi di città che differiscono per al massimo 2 caratteri:
-
+We could rewrite the previous query using DuckDB's [`levenshtein` function](https://duckdb.org/docs/stable/sql/functions/text#levenshteins1-s2), matching cities that differ by at most 2 characters:
 
 ```sql
 SELECT
@@ -130,14 +127,14 @@ JOIN read_csv_auto('ref_sample.csv') AS r
   AND levenshtein(i.city, r.city) <= 2;
 ```
 
-| input_city      | input_region | ref_city        | ref_region | city_code | levenshtein_distance |
-|-----------------|-------------|-----------------|------------|-----------|----------------------:|
-| Cefalu'         | Sicilia     | Cefalù          | Sicilia    | 082027    | 2                    |
-: Risultato di un join fuzzy tra dati errati e dati ufficiali {.striped .small}
+| input_city | input_region | ref_city | ref_region | city_code | levenshtein_distance |
+|---|---|---|---|---|---:|
+| Cefalu' | Sicilia | Cefalù | Sicilia | 082027 | 2 |
+: Result with Levenshtein distance &le; 2 {.striped .small}
 
-L'unica città di cui c'è un risulato è soltanto `Cefalu'`, perché la **distanza** di Levenshtein tra `Cefalu'` e `Cefalù` è **2**: sostituzione di `u'` con `ù` e rimozione di `'`.
+The only match is `Cefalu'`, because the Levenshtein distance between `Cefalu'` and `Cefalù` is **2**: replacing `u'` with `ù` and removing `'`.
 
-Se aumentiamo la soglia a 10, non cambia nulla, perché ad esempio il Comune di `Rodengo Saiano` è scritto in maiuscolo e con il trattino e la distanza tra `RODENGO-SAIANO` e `Rodengo Saiano` è pari a **12**:
+If we increase the threshold to 10, nothing changes — because `Rodengo Saiano` is written in uppercase with a hyphen, and the distance between `RODENGO-SAIANO` and `Rodengo Saiano` is **12**:
 
 ```bash
 SELECT levenshtein('RODENGO-SAIANO', 'Rodengo Saiano') AS distance;
@@ -145,7 +142,7 @@ SELECT levenshtein('RODENGO-SAIANO', 'Rodengo Saiano') AS distance;
 12
 ```
 
-Se si imposta la soglia a 15 ne otteniamo in ogni caso soltanto 2, perché il JOIN del campo `region` non trova corrispondenza tra `CALABRIA` e `Calabria`. Quindi dovremmo usare una funzione di distanza tra stringhe anche per il campo `region`:
+Setting the threshold to 15 gives only 2 matches, because the exact JOIN on `region` fails between `CALABRIA` and `Calabria`. So we need to use a distance function for the `region` column too:
 
 ```sql
 SELECT
@@ -161,35 +158,34 @@ JOIN read_csv_auto('ref_sample.csv') AS r
   AND levenshtein(LOWER(i.region), LOWER(r.region)) < 10
 ```
 
-Ma è l'**output non è** proprio **quello che ci aspettiamo**, non 3 righe in totale (una per ogni Comune), ma **ben 8 righe**:
+But the output is **not what we expect** — not 3 rows (one per municipality), but **8 rows**:
 
-| input_city      | input_region | ref_city            | ref_region | city_code | levenshtein_distance |
-|-----------------|-------------|---------------------|------------|-----------|----------------------:|
-| Cefalu'         | Sicilia     | Cefalù              | Sicilia    | 082027    | 2                    |
-| Cefalu'         | Sicilia     | Reggio di Calabria  | Calabria   | 080063    | 15                   |
-| Cefalu'         | Sicilia     | Rodengo Saiano      | Lombardia  | 017163    | 12                   |
-| Reggio Calabria | CALABRIA    | Cefalù              | Sicilia    | 082027    | 12                   |
-| Reggio Calabria | CALABRIA    | Reggio di Calabria  | Calabria   | 080063    | 3                    |
-| Reggio Calabria | CALABRIA    | Rodengo Saiano      | Lombardia  | 017163    | 10                   |
-| RODENGO-SAIANO  | Lombardia   | Cefalù              | Sicilia    | 082027    | 14                   |
-| RODENGO-SAIANO  | Lombardia   | Rodengo Saiano      | Lombardia  | 017163    | 12                   |
-: Risultato di un join fuzzy tra dati errati e dati ufficiali {.striped .small}
+| input_city | input_region | ref_city | ref_region | city_code | levenshtein_distance |
+|---|---|---|---|---|---:|
+| Cefalu' | Sicilia | Cefalù | Sicilia | 082027 | 2 |
+| Cefalu' | Sicilia | Reggio di Calabria | Calabria | 080063 | 15 |
+| Cefalu' | Sicilia | Rodengo Saiano | Lombardia | 017163 | 12 |
+| Reggio Calabria | CALABRIA | Cefalù | Sicilia | 082027 | 12 |
+| Reggio Calabria | CALABRIA | Reggio di Calabria | Calabria | 080063 | 3 |
+| Reggio Calabria | CALABRIA | Rodengo Saiano | Lombardia | 017163 | 10 |
+| RODENGO-SAIANO | Lombardia | Cefalù | Sicilia | 082027 | 14 |
+| RODENGO-SAIANO | Lombardia | Rodengo Saiano | Lombardia | 017163 | 12 |
+: Result of a fuzzy join with permissive thresholds {.striped .small}
 
-Quando si esegue un JOIN esatto, l'obiettivo è trovare una singola e chiara corrispondenza per ogni riga. Nel mondo del  "fuzzy matching", le regole cambiano. Abbassando le nostre pretese con soglie di distanza permissive, non stiamo più chiedendo al database "trova l'unica corrispondenza giusta", ma piuttosto:
+With exact joins, the goal is to find a single clear match for each row. In the world of fuzzy matching, the rules change. By using permissive distance thresholds, we are no longer asking the database *"find the one correct match"*, but rather:
 
-> Per ogni riga del mio input, trovami tutte le righe nel file di riferimento che soddisfano questi criteri di somiglianza generici.
+> For each input row, find **all** reference rows that satisfy these loose similarity criteria.
 
-Se una riga di input è "vagamente simile" a più righe di riferimento, il database creerà una riga di output per ciascuna di queste coincidenze. Questo effetto di moltiplicazione è noto come **prodotto cartesiano** delle coincidenze.
+If an input row is "somewhat similar" to multiple reference rows, the database creates an output row for each. This multiplication effect is known as a **Cartesian product** of matches.
 
-Dopo aver generato le possibili corrispondenze, dovremmo filtrarle per tenere solo la migliore per ogni record di partenza. Il processo può essere suddiviso in tre fasi:
+After generating all possible matches, we need to **filter them** to keep only the best one per input record. The process has three phases:
 
-- trovare tutte le possibili corrispondenze e calcolare le distanze
-- assegnare un rango a ciascuna corrispondenza in base alla somma delle distanze
-- selezionare solo la corrispondenza con il rango più alto (cioè la più simile)
-
+1. Find all possible matches and calculate distances
+2. Rank each match by total distance
+3. Select only the top-ranked match (the most similar)
 
 ```sql
--- Fase 1: trova tutti i candidati e calcola le distanze
+-- Phase 1: find all candidates and calculate distances
 WITH all_matches AS (
     SELECT
         i.city AS input_city,
@@ -204,7 +200,7 @@ WITH all_matches AS (
       ON levenshtein(i.city, r.city) <= 15
      AND levenshtein(i.region, r.region) < 10
 ),
--- Fase 2: assegna un rango ai candidati
+-- Phase 2: rank the candidates
 ranked_matches AS (
     SELECT
         *,
@@ -214,7 +210,7 @@ ranked_matches AS (
         ) AS rn
     FROM all_matches
 )
--- Fase 3: prendi solo il miglior candidato (rn = 1)
+-- Phase 3: keep only the best candidate (rn = 1)
 SELECT
     input_city,
     input_region,
@@ -227,48 +223,51 @@ FROM ranked_matches
 WHERE rn = 1;
 ```
 
-| input_city      | input_region | ref_city            | ref_region | city_code | city_distance | region_distance |
-|-----------------|-------------|---------------------|------------|-----------|---------------:|----------------:|
-| Cefalu'         | Sicilia     | Cefalù              | Sicilia    | 082027    | 2             | 0              |
-| RODENGO-SAIANO  | Lombardia   | Rodengo Saiano      | Lombardia  | 017163    | 12            | 0              |
-| Reggio Calabria | CALABRIA    | Reggio di Calabria  | Calabria   | 080063    | 3             | 7              |
-: Risultato di un join fuzzy, con selezione della migliore corrispondenza {.striped .small}
+| input_city | input_region | ref_city | ref_region | city_code | city_distance | region_distance |
+|---|---|---|---|---|---:|---:|
+| Cefalu' | Sicilia | Cefalù | Sicilia | 082027 | 2 | 0 |
+| RODENGO-SAIANO | Lombardia | Rodengo Saiano | Lombardia | 017163 | 12 | 0 |
+| Reggio Calabria | CALABRIA | Reggio di Calabria | Calabria | 080063 | 3 | 7 |
+: Result of a fuzzy join, selecting the best match {.striped .small}
 
 
-### Una sintesi per ridurre le distanze
+### Reducing Distances with Normalization
 
-A seguira una tabellina di riepilogo, sull'esempio del nome del [Comune di `Forza·d'Agrò`](https://www.wikiwand.com/en/articles/Forza_d'Agr%C3%B2), scritto però in modo errato `Forza··D’Agro·`:
+Here is a summary using the Italian municipality of [`Forza d'Agro`](https://www.wikiwand.com/en/articles/Forza_d'Agr%C3%B2), written incorrectly as `Forza  D'Agro `:
 
-- c'è la `D` maiuscola invece che minuscola;
-- ci sono due spazi in eccesso (uno tra `Forza` e `D'Agro` e uno alla fine);
-- non c'è la `o` accentata, ma una `o` normale;
-- c'è un apostrofo tipografico `’`, invece di uno dritto `'`.
+- uppercase `D` instead of lowercase
+- two extra spaces (one between `Forza` and `D'Agro`, one trailing)
+- no accent on the `o`
+- a typographic apostrophe `\u2019` instead of a straight one `'`
 
 ::: {.callout-note}
-**Nota**: qui sopra sono stati resi visibili gli spazi in eccesso con il carattere `·`.
+**Note**: spaces are shown as `·` for visibility.
 :::
 
 :::{.column-body-outset}
-| descrizione | left | right | distanza | funzione aggiunta |
+| description | left | right | distance | function applied |
 | :--- | :--- | :--- | ---: | :--- |
-| Inizio | `Forza··D’Agro·` | `Forza·d'Agrò` | 7 |  |
-| In minuscolo | `forza··d’agro·` | `forza·d'agrò` | 6 | `LOWER('value')` |
-| Rimossi spazi ridondanti | `forza·d’agro` | `forza·d'agrò` | 5 | `regexp_replace(trim(LOWER('value')), '\s+', ' ')` |
-| Rimossi accentati | `forza·d’agro` | `forza·d'agro` | 3 | `strip_accents(regexp_replace(trim(LOWER('value')), '\s+', ' '))` |
-| Rimossi caratteri speciali | `forza·dagro` | `forza·dagro` | 0 | `regexp_replace(strip_accents(regexp_replace(trim(LOWER('value')), '\s+', ' ')), '[^a-zA-Z0-9 ]', '', 'g')` |
-: Riduzione della distanza con passaggi successivi di normalizzazione {.striped .table-sm .table-bordered .table-responsive tbl-colwidths="[20,15,15,10,35]"}
+| Start | `Forza··D\u2019Agro·` | `Forza·d'Agr\u00f2` | 7 |  |
+| Lowercase | `forza··d\u2019agro·` | `forza·d'agr\u00f2` | 6 | `LOWER('value')` |
+| Trim + collapse spaces | `forza·d\u2019agro` | `forza·d'agr\u00f2` | 5 | `regexp_replace(trim(LOWER('value')), '\s+', ' ')` |
+| Strip accents | `forza·d\u2019agro` | `forza·d'agro` | 3 | `strip_accents(...)` |
+| Keep only alphanumeric | `forza·dagro` | `forza·dagro` | 0 | `regexp_replace(..., '[^a-zA-Z0-9 ]', '', 'g')` |
+: Reducing Levenshtein distance through normalization steps {.striped .table-sm .table-bordered .table-responsive tbl-colwidths="[20,15,15,10,35]"}
 :::
 
 <br>
-👉 Quindi **un caso molto brutto**, pieno di errori, può essere normalizzato in modo da **ridurre** la **distanza** di Levenshtein a **zero**, e quindi trovare la corrispondenza esatta e `Forza··D'Agro·` è uguale a `Forza·d'Agrò` e quindi riesco a ricavarne il codice identificativo.
 
-## Note finali
+So even a **really messy** value, full of errors, can be normalized to **reduce the distance to zero** — meaning `Forza  D\u2019Agro ` becomes equivalent to `Forza d'Agr\u00f2` and we can retrieve its identifier code.
 
-In questo percorso abbiamo descritto alcuni elementi di base per misurare la "distanza" tra le stringhe e a normalizzare il testo per rendere il confronto più efficace. Abbiamo visto come gestire maiuscole/minuscole, spazi superflui, accenti e caratteri speciali, che sono gli elementi di base di ogni processo di pulizia dei dati.
+## What Comes Next
 
-Tuttavia, questo è solo l'inizio. Il mondo del "fuzzy matching" è molto più vasto e complesso. Per affrontare dataset più grandi e "disordinati", si ricorre spesso a metodi più sofisticati, che vanno oltre il semplice conteggio delle modifiche:
+In this walkthrough we covered the basics of measuring string distance and normalizing text for more effective comparison: case, whitespace, accents, and special characters.
 
-- Algoritmi fonetici: Invece di guardare come sono scritte le parole, questi algoritmi le codificano in base a come suonano. Metodi come Metaphone o Soundex sono bravissimi a capire che "Smith" e "Smythe" sono probabilmente la stessa cosa.
-- Modelli statistici (n-gram): Questi metodi scompongono le stringhe in piccole parti (es. coppie o triplette di caratteri) e ne confrontano la frequenza, risultando molto efficaci nel trovare somiglianze anche quando l'ordine delle parole è diverso.
+However, this is just the beginning. The fuzzy matching world is much broader. For larger and messier datasets, more sophisticated methods exist:
 
-Strumenti di pulizia dati come [OpenRefine](https://openrefine.org/) integrano decine di questi algoritmi avanzati, permettendo di raggruppare e correggere dati simili con grande efficacia.
+- **Phonetic algorithms**: Instead of looking at how words are spelled, these encode words by how they *sound*. Methods like Metaphone or Soundex excel at recognizing that "Smith" and "Smythe" are probably the same thing.
+- **Statistical models (n-grams)**: These break strings into small fragments (pairs or triplets of characters) and compare their frequency, which is very effective at finding similarities even when word order differs.
+
+Data cleaning tools like [OpenRefine](https://openrefine.org/) integrate dozens of these advanced algorithms, allowing you to cluster and correct similar data with great effectiveness.
+
+**Tometo Tomato wraps all of this complexity into a single command.** See the [Use Case Guide](use-case-guide.qmd) for the complete step-by-step workflow.
