@@ -1,7 +1,7 @@
-# tometo_tomato
-
 [![PyPI](https://img.shields.io/pypi/v/tometo_tomato.svg)](https://pypi.org/project/tometo_tomato/)
 [![deepwiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/aborruso/tometo_tomato)
+
+# tometo_tomato
 
 **tometo_tomato** is a Python CLI tool for performing fuzzy joins between two CSV files, even in the presence of typos, abbreviations, or different formatting. It leverages DuckDB and the rapidfuzz extension to associate similar records across different sources.
 
