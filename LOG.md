@@ -1,5 +1,11 @@
 # LOG
 
+## 2026-02-07
+
+- Optimized CROSS JOIN with DISTINCT on input join columns: deduplicate unique key combinations before the expensive fuzzy matching, then re-expand via `input_key_map`. Reduces redundant fuzzy computations when input has many duplicate values in join columns. Works with and without `--block-prefix`.
+- Added test `test_duplicate_input_rows` to verify correct behavior with duplicate join-column values.
+- Restructured Quarto site: all pages in English, new navbar (Home | Why | Install | Use Case Guide | CLI Reference), added `use-case-guide.qmd` with full 2-step workflow and multi-column disambiguation example, added `cli-reference.qmd` with complete flag table, translated `introduction.qmd` and `install.qmd` from IT to EN, fixed footer and added `repo-url`.
+
 ## 2025-08-22
 
 - **Removed `pandas` dependency**: Refactored `read_header()` function to eliminate dependency on pandas by replacing `fetchdf()` fallback with `LIMIT 0` approach that ensures `description` attribute is always populated. All tests pass and CLI functions correctly without pandas.
